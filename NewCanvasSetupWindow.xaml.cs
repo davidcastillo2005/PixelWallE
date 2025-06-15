@@ -40,12 +40,6 @@ namespace PixelWallE
             Close();
         }
 
-        private void CancelButton_Click(Object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-            Close();
-        }
-
         private void UpdatePreviewCanvas(double height, double width)
         {
             if (PreviewBorder == null
@@ -100,6 +94,12 @@ namespace PixelWallE
             }
             CanvasWidth = width;
             UpdatePreviewCanvas(CanvasHeight, CanvasWidth);
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
         }
     }
 }

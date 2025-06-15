@@ -1,45 +1,13 @@
 ﻿using System.Windows.Media;
-using PixelWallE.Interfaces;
-using PixelWallE.SourceCodeAnalisis.Semantic.Visitors;
+using System.Windows.Shapes;
 
 namespace PixelWallE.View
 {
-    public class Handler : IHandle
+    public class Handler
     {
         public MainWindow Window { get; }
-        public WallE WallE;
-        public Handler(MainWindow window, WallE wallE)
-        {
-            this.WallE = wallE;
-            Window = window;
-        }
-        public int GetActualX() => (int)Window.WallE.PositionX!;
 
-        public int GetActualY() => (int)Window.WallE.PositionY!;
-
-        public int GetCanvasSize()
-            => Window.GetCanvasWidth() == Window.GetCanvasWidth()
-            ? Window.GetCanvasSize()
-            : throw new NotImplementedException();
-
-        public void Spawn(int x, int y)
-        {
-            Window.WallE.SetPos(x, y);
-            Window.DrawWallE();
-            Window.WallE.Show();
-        }
-
-        public void DrawLine(int x1, int y1)
-        {
-            if (Window.WallE.isVisible && Window.WallE.PositionX is not null && Window.WallE.PositionY is not null)
-            {
-                PlotLine(x1, y1);
-            }
-            else
-            {
-                throw new Exception();
-            }
-        }
+        public Handler(MainWindow window, WallE wallE) => Window = window;
 
         private void PlotLine(int x1, int y1)
         {
@@ -130,13 +98,47 @@ namespace PixelWallE.View
             Move(x, y);
             Draw();
         }
-
-        public void Draw()
+        public void DrawRectangle()
         {
-            Window.DrawPixel();
-            Window.Rectangles[GetActualX(), GetActualY()] = (SolidColorBrush)WallE.Brush;
+            var x0 = GetActualX();
+            var y0 = GetActualY();
+            var brushSize = Window.GetWallEBrushSize();
+            var mid = brushSize / 2;
+            Rectangle rect = new()
+            {
+                Fill = Window.GetWallEBrushColor()
+            };
+
+            for (int i = 0; i < mid; i++)
+            {
+                Plot(x0, y0 + i);
+            }
         }
 
+
+
+        public Object CallFunction(string Name, Object[] @params) => Name switch
+        {
+            "GetActualX" => new Object(GetActualX()),
+            "GetActualY" => new Object(GetActualY()),
+            "GetCanvasSize" => new Object(GetCanvasSize()),
+            "GetCanvasWidth" => new Object(GetCanvasWidth()),
+            "GetCanvasHeight" => new Object(GetCanvasHeight()),
+            "GetColorCount" => new Object(GetColorCount(@params[0].ToString(),
+                                                        @params[1].ToInterger(),
+                                                        @params[2].ToInterger(),
+                                                        @params[3].ToInterger(),
+                                                        @params[4].ToInterger())),
+            _ => throw new NotImplementedException(),
+        };
+        public int GetActualX() => (int)Window.GetWallEPosX()!;
+        public int GetActualY() => (int)Window.GetWallEPosY()!;
+        public int GetCanvasSize()
+            => Window.GetCanvasWidth() == Window.GetCanvasWidth()
+            ? Window.GetCanvasSize()
+            : throw new NotImplementedException();
+        public int GetCanvasWidth() => Window.GetCanvasWidth();
+        public int GetCanvasHeight() => Window.GetCanvasHeight();
         public int GetColorCount(string color, int x1, int y1, int x2, int y2)
         {
             int a = 0;
@@ -153,20 +155,7 @@ namespace PixelWallE.View
             return a;
         }
 
-        public Object CallFunction(string Name, Object[] @params) => Name switch
-        {
-            "GetActualX" => new Object(GetActualX()),
-            "GetActualY" => new Object(GetActualY()),
-            "GetCanvasSize" => new Object(GetCanvasSize()),
-            "GetColorCount" => new Object(GetColorCount(@params[0].ToString(),
-                                                        @params[1].ToInterger(),
-                                                        @params[2].ToInterger(),
-                                                        @params[3].ToInterger(),
-                                                        @params[4].ToInterger())),
-
-            _ => throw new NotImplementedException(),
-        };
-
+        #region Actions
         public void CallAction(string Name, Object[] @params)
         {
             switch (Name)
@@ -180,72 +169,108 @@ namespace PixelWallE.View
                 case "Move":
                     Move(@params[0].ToInterger(), @params[1].ToInterger());
                     break;
+                case "Plot":
+                    Plot(@params[0].ToInterger(), @params[1].ToInterger());
+                    break;
                 case "Color":
-                    Color(@params[0].ToString());
+                    this.Color(@params[0].ToString());
                     break;
                 case "DrawLine":
                     DrawLine(@params[0].ToInterger(), @params[1].ToInterger());
                     break;
-                case "DrawEllipse":
-                    DrawEllipse(@params[0].ToInterger(), @params[1].ToInterger());
+                case "DrawCircle":
+                    DrawCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
+                    break;
+                case "PlotCircle":
+                    PlotCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
+                    break;
+                case "DrawRectangle":
+                    DrawRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger(), @params[4].ToInterger());
+                    break;
+                case "PlotRectangle":
+                    PlotRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger());
+                    break;
+                case "Fill":
+
+                    Fill(GetCurrentColor(GetActualX(), GetActualY()));
                     break;
                 default:
                     throw new NotImplementedException();
             }
         }
-
-        private void DrawEllipse(int radiusX, int radiusY)
+        private void Spawn(int x, int y)
         {
-            if (Window.WallE.isVisible && Window.WallE.PositionX is not null && Window.WallE.PositionY is not null)
+            Window.WallE.SetPos(x, y);
+            Window.DrawWallE();
+            Window.WallE.Show();
+        }
+        private void Draw()
+        {
+            Window.DrawPixel();
+        }
+        private void Move(int x, int y)
+        {
+            Window.WallE.SetPos(x, y);
+            Window.DrawWallE();
+        }
+        private void Color(string color) => Window.WallE.ChangeBrush(ToBrush(color));
+        private void DrawLine(int x1, int y1)
+        {
+            if (Window.WallE.isVisible
+                && Window.WallE.PositionX is not null
+                && Window.WallE.PositionY is not null)
             {
-                MidpointAlgorithm(radiusX, radiusY);
+                PlotLine(x1, y1);
             }
             else
             {
                 throw new Exception();
             }
         }
-
-        private void MidpointAlgorithm(int radiusX, int radiusY)
+        private void DrawRectangle(int dirX, int dirY, int distance, int width, int height)
         {
-            var x0 = (int)Window.WallE.PositionX!;
-            var y0 = (int)Window.WallE.PositionY!;
-
-            var x = 0;
-            var y = radiusY;
-
-            var p1 = (radiusY * radiusY) - (radiusX * radiusX * radiusY) + (0.25f * radiusX * radiusX);
-            var dx = 2 * radiusY * radiusY * x;
-            var dy = 2 * radiusX * radiusX * y;
-
-            while (dx < dy)
+            if (IsValidDirection(dirX) && IsValidDirection(dirY))
             {
-                Plot(x0 + x, y0 + y);
-                Plot(x0 - x, y0 + y);
-                Plot(x0 + x, y0 - y);
-                Plot(x0 - x, y0 - y);
-
-                if (p1 < 0)
+                var x0 = GetActualX() + dirX * distance;
+                var y0 = GetActualX() + dirY * distance;
+                PlotRectangle(x0, y0, width, height);
+                Move(x0, y0);
+            }
+            throw new Exception();
+        }
+        private void DrawCircle(int dirX, int dirY, int radius)
+        {
+            if (Window.GetWallEVisibility())
+            {
+                var x0 = GetActualX() + dirX;
+                var y0 = GetActualY() + dirY;
+                PlotCircle(x0, y0, radius);
+                Move(x0, y0);
+            }
+            else
+            {
+                throw new Exception();
+            }
+        }
+        private void Fill(SolidColorBrush brush)
+        {
+            var x0 = GetActualX();
+            var y0 = GetActualY();
+            (int x, int y)[] vArr = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+            foreach (var (x, y) in vArr)
+            {
+                var X = x0 + x;
+                var Y = y0 + y;
+                var maxX = GetCanvasWidth();
+                var maxY = GetCanvasHeight();
+                if (IsInsideBounds(X, Y) && brush == GetCurrentColor(X, Y))
                 {
-                    x += 1;
-                    dx += 2 * radiusY * radiusY;
-                    p1 += dx + radiusY * radiusY;
-                }
-                else
-                {
-                    x += 1;
-                    y -= 1;
-                    dx += 2 * radiusX * radiusX;
-                    dy -= 2 * radiusY * radiusY;
-                    p1 += dx - dy + radiusY * radiusY;
+                    Plot(X, Y);
+                    Fill(brush);
                 }
             }
         }
-
-        private void Color(string color)
-        {
-            WallE.ChangeBrush(ToBrush(color));
-        }
+        #endregion
 
         public SolidColorBrush ToBrush(string color) => color switch
         {
@@ -257,12 +282,6 @@ namespace PixelWallE.View
             "Orange" => Brushes.Orange,
             _ => throw new NotImplementedException(),
         };
-
-        private void Move(int x, int y)
-        {
-            WallE.SetPos(x, y);
-            Window.DrawWallE();
-        }
 
         public bool TryGetErrFunction(string Name, Object[] @params, out Object result)
         {
@@ -288,7 +307,7 @@ namespace PixelWallE.View
 
         private bool ColorErr()
         {
-            if (WallE is not null && WallE.isVisible)
+            if (Window.GetWallEVisibility())
             {
                 return true;
             }
@@ -297,7 +316,7 @@ namespace PixelWallE.View
 
         private bool MoveErr()
         {
-            if (WallE is not null && WallE.isVisible)
+            if (Window.GetWallEVisibility())
             {
                 return true;
             }
@@ -306,10 +325,7 @@ namespace PixelWallE.View
 
         private bool DrawErr()
         {
-            if (WallE is not null
-                && !WallE.isVisible
-                && WallE.PositionX is not null
-                && WallE.PositionY is not null)
+            if (!Window.GetWallEVisibility())
             {
                 return true;
             }
@@ -318,12 +334,71 @@ namespace PixelWallE.View
 
         private bool SpawnErr()
         {
-            if (Window.WallE.isVisible)
+            if (Window.GetWallEVisibility())
             {
                 return true;
             }
             Window.WallE.Show();
             return false;
         }
+
+        private void PlotCircle(int x0, int y0, int radius)
+        {
+            radius--;
+            var X = 0;
+            var Y = -radius;
+            while (X < -Y)
+            {
+                var yMid = Y + 0.5;
+                if (X * X + yMid * yMid > radius * radius)
+                {
+                    Y += 1;
+                }
+
+                Plot(x0 + X, y0 + Y);
+                Plot(x0 - X, y0 + Y);
+                Plot(x0 + X, y0 - Y);
+                Plot(x0 - X, y0 - Y);
+                Plot(x0 + Y, y0 + X);
+                Plot(x0 - Y, y0 + X);
+                Plot(x0 + Y, y0 - X);
+                Plot(x0 - Y, y0 - X);
+                X += 1;
+            }
+        }
+
+        private void PlotRectangle(int x0, int y0, int width, int height)
+        {
+            for (int i = y0; i < y0 + height; i++)
+            {
+                Plot(x0 + width - 1, i);
+                Plot(x0 - width + 1, i);
+            }
+            for (int i = y0; i > y0 - height; i--)
+            {
+                Plot(x0 + width - 1, i);
+                Plot(x0 - width + 1, i);
+            }
+            for (int i = x0; i < x0 + width; i++)
+            {
+                Plot(i, y0 + height - 1);
+                Plot(i, y0 - height + 1);
+            }
+            for (int i = x0; i > x0 - width; i--)
+            {
+                Plot(i, y0 + height - 1);
+                Plot(i, y0 - height + 1);
+            }
+        }
+        private bool IsValidDirection(int dirX) 
+            => dirX == 1 || dirX == -1 || dirX == 0;
+
+        private SolidColorBrush GetCurrentColor(int x, int y) 
+            => IsInsideBounds(x, y) ? Window.Rectangles[x, y] : throw new Exception();
+
+        private bool IsInsideBounds(int X, int Y)
+            => X > -1 && Y > -1 && X < GetCanvasWidth() && Y < GetCanvasHeight();
+
+
     }
 }

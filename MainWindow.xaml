@@ -161,15 +161,33 @@
                 </MenuItem>
             </Menu>
         </Grid>
-        <StatusBar 
-            Grid.Row="4"
+        <Grid
+            Name="StatusGrid"
+            Grid.Row = "4"
             Grid.Column="0"
             Background="WhiteSmoke">
-            <StatusBarItem>
-                <TextBlock
-                    Text="Ready"/>
-            </StatusBarItem>
-        </StatusBar>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                    Width="*"/>
+                <ColumnDefinition
+                    Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label
+                Grid.Row="0"
+                Grid.Column="0"
+                VerticalContentAlignment="Center"
+                HorizontalAlignment="Center"
+                HorizontalContentAlignment="Center"
+                Margin="3"
+                Content="Ready"/>
+            <Button
+                Grid.Column="1"
+                Grid.Row="0"
+                Click="Button_Click"
+                VerticalContentAlignment="Center"
+                Margin="3"
+                Content="Start"/>
+        </Grid>
         <RichTextBox
             Name="SourceCode"
             Grid.Row="1"
@@ -184,11 +202,6 @@
             MinWidth="150">
             <FlowDocument
                 LineHeight="7">
-                <Paragraph>
-                    <Run 
-                        Text="Write here...">
-                    </Run>
-                </Paragraph>
             </FlowDocument>
         </RichTextBox>
         <Grid.ColumnDefinitions>

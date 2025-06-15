@@ -1,12 +1,13 @@
-﻿using System.Windows;
+﻿using System.Reflection.Metadata.Ecma335;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using PixelWallE.Interfaces;
-using PixelWallE.View;
 using PixelWallE.SourceCodeAnalisis.Semantic;
+using PixelWallE.View;
 
 namespace PixelWallE
 {
@@ -151,12 +152,9 @@ namespace PixelWallE
             Canvas.SetTop(WallE.Image, GetWallEPosY() * rectSize);
         }
 
-        private double GetWallEPosX() => (double)WallE.PositionX;
-
-        private double GetWallEPosY() => (double)WallE.PositionY;
-
         public void DrawPixel()
         {
+            Rectangles[(int)GetWallEPosX(), GetWallEPosY()] = (SolidColorBrush)GetWallEBrushColor();
             Rectangle rect = new()
             {
                 Fill = WallE.Brush
@@ -190,10 +188,7 @@ namespace PixelWallE
             }
         }
 
-        private void CheckErr(SemanticErrVisitor semanticErr, IStatement ast)
-        {
-            ast.Accept(semanticErr);
-        }
+        private void CheckErr(SemanticErrVisitor semanticErr, IStatement ast) => ast.Accept(semanticErr);
 
         private void Execute(InterpreterVisitor interpreter, IStatement ast)
         {
@@ -227,7 +222,7 @@ namespace PixelWallE
             Rectangles = new SolidColorBrush[canvasWidth, canvasHeight];
             for (int i = 0; i < canvasWidth; i++)
             {
-                for (global::System.Int32 j = 0; j < canvasHeight; j++)
+                for (int j = 0; j < canvasHeight; j++)
                 {
                     Rectangles[i, j] = Brushes.White;
                 }
@@ -260,14 +255,18 @@ namespace PixelWallE
             throw new NotImplementedException();
         }
 
-        public int GetCanvasWidth()
-        {
-            return canvasWidth;
-        }
+        public bool GetWallEVisibility() => WallE.isVisible;
 
-        public int GetCanvasHeight()
-        {
-            return canvasHeight;
-        }
+        public int GetWallEPosX() => (int)WallE.PositionX!;
+
+        public int GetWallEPosY() => (int)WallE.PositionY!;
+
+        public int GetCanvasWidth() => canvasWidth;
+
+        public int GetCanvasHeight() => canvasHeight;
+
+        public int GetWallEBrushSize() => WallE.BrushSize;
+
+        public Brush GetWallEBrushColor() => WallE.Brush;
     }
 }

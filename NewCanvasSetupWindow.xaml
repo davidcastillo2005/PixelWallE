@@ -31,8 +31,7 @@
             Width="75"
             Height="25"
             IsCancel="True"
-            Click="CancelButton_Click"
-            Content="Cancel"/>
+            Content="Cancel" Click="CancelButton_Click"/>
         <TextBlock
             Grid.Row="1"
             Grid.Column="0"
