@@ -333,7 +333,7 @@ public class Parser
     {
         int startIndex = tokenIndex;
         if (TryMatchToken(tokens, literalType)
-            && Object.TryParse(tokens[startIndex].Value, null, out Object? literal))
+            && DynamicValue.TryParse(tokens[startIndex].Value, null, out DynamicValue? literal))
             return GetDefaultExpre(new LiteralExpre(literal, GetCoord(tokens, startIndex)), out expre);
         else if (TryMatchToken(tokens, TokenType.LeftCurly)
             && tryGetFunc is not null && tryGetFunc(tokens, out IExpression? result)

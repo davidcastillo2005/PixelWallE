@@ -22,12 +22,12 @@ public class InterpreterVisitor(Context context) : IVisitor
     10- CodeBlock
     */
     public Context Context { get; set; } = context;
-    public void ActionVisit(string identifier, Object[] arguments, Coord coord)
+    public void ActionVisit(string identifier, DynamicValue[] arguments, Coord coord)
     {
         Context.Handler.CallAction(identifier, arguments, coord);
     }
 
-    public void GotoVisit(string targetLabel, Object? condition, Coord coord)
+    public void GotoVisit(string targetLabel, DynamicValue? condition, Coord coord)
     {
         if (condition is not null)
         {
@@ -38,11 +38,11 @@ public class InterpreterVisitor(Context context) : IVisitor
         Context.Jump(targetLabel);
     }
 
-    public void AssignVisit(string identifier, Object value, Coord coord) => Context.Variables[identifier] = value;
+    public void AssignVisit(string identifier, DynamicValue value, Coord coord) => Context.Variables[identifier] = value;
 
     public void LabelVisit(string identifier, Coord coord) => Context.Labels[identifier] = coord.Row - 1;
 
-    public Object BinaryVisit(Object left, BinaryOperationType op, Object right, Coord coord) => op switch
+    public DynamicValue BinaryVisit(DynamicValue left, BinaryOperationType op, DynamicValue right, Coord coord) => op switch
     {
         BinaryOperationType.Add => left! + right!,
         BinaryOperationType.Subtract => left! - right!,
@@ -61,9 +61,9 @@ public class InterpreterVisitor(Context context) : IVisitor
         _ => throw new NotImplementedException(),
     };
 
-    public Object[] ParametersVisit(IExpression[] expressions)
+    public DynamicValue[] ParametersVisit(IExpression[] expressions)
     {
-        List<Object> results = [];
+        List<DynamicValue> results = [];
         foreach (var item in expressions)
         {
             results.Add(item.Accept(this));
@@ -71,26 +71,26 @@ public class InterpreterVisitor(Context context) : IVisitor
         return [.. results];
     }
 
-    public Object FunctionVisit(string identifier, Object[] arguments, Coord coord)
+    public DynamicValue FunctionVisit(string identifier, DynamicValue[] arguments, Coord coord)
     {
         return Context.Handler.CallFunction(identifier, arguments);
     }
 
-    public Object LiteralVisit(Object value, Coord coord)
+    public DynamicValue LiteralVisit(DynamicValue value, Coord coord)
     {
         return value;
     }
 
-    public Object UnaryVisit(Object argument, UnaryOperationType op, Coord coord) => op switch
+    public DynamicValue UnaryVisit(DynamicValue argument, UnaryOperationType op, Coord coord) => op switch
     {
         UnaryOperationType.Not => !argument,
         UnaryOperationType.Negative => -argument,
         _ => throw new Exception(),
     };
 
-    public Object VariableVisit(string identifier, Coord coord)
+    public DynamicValue VariableVisit(string identifier, Coord coord)
     {
-        Context.Variables.TryGetValue(identifier, out Object? result);
+        Context.Variables.TryGetValue(identifier, out DynamicValue? result);
         if (result is not null)
             return result;
         else

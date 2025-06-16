@@ -13,7 +13,7 @@ public class Context
         Labels = [];
         Handler = handler;
     }
-    public Dictionary<string, Object> Variables { get; set; }
+    public Dictionary<string, DynamicValue> Variables { get; set; }
     public Dictionary<string, int> Labels { get; set; }
 
     public void Jump(string targetLabel)

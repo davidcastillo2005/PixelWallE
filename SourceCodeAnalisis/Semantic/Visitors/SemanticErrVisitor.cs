@@ -24,9 +24,9 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     public void Visit(IStatement statement, Coord coord) => statement.Accept(this);
 
-    public Object VariableVisit(string identifier, Coord coord)
+    public DynamicValue VariableVisit(string identifier, Coord coord)
     {
-        if (Context.Variables.TryGetValue(identifier, out Object? @return))
+        if (Context.Variables.TryGetValue(identifier, out DynamicValue? @return))
         {
             return GetObject(coord, @return);
         }
@@ -34,23 +34,23 @@ public class SemanticErrVisitor(Context context) : IVisitor
         return GetObject(coord, @return);
     }
 
-    public void ActionVisit(string identifier, Object[] arguments, Coord coord)
+    public void ActionVisit(string identifier, DynamicValue[] arguments, Coord coord)
     {
         Context.Handler.TryGetErrAction(identifier, arguments, this, coord);
     }
 
-    public Object FunctionVisit(string identifier, Object[] arguments, Coord coord)
+    public DynamicValue FunctionVisit(string identifier, DynamicValue[] arguments, Coord coord)
     {
-        if (Context.Handler.TryGetErrFunction(identifier, arguments, this, coord, out Object @return))
+        if (Context.Handler.TryGetErrFunction(identifier, arguments, this, coord, out DynamicValue @return))
         {
             return GetObject(coord, @return);
         }
         return @return;
     }
 
-    public Object[] ParametersVisit(IExpression[] parameters)
+    public DynamicValue[] ParametersVisit(IExpression[] parameters)
     {
-        List<Object> results = [];
+        List<DynamicValue> results = [];
         foreach (var item in parameters)
         {
             results.Add(item.Accept(this));
@@ -58,15 +58,15 @@ public class SemanticErrVisitor(Context context) : IVisitor
         return [.. results];
     }
 
-    public void AssignVisit(string identifier, Object value, Coord coord)
+    public void AssignVisit(string identifier, DynamicValue value, Coord coord)
     {
         Context.Variables[identifier] = GetObject(coord, value);
     }
 
-    public Object LiteralVisit(Object value, Coord coord)
+    public DynamicValue LiteralVisit(DynamicValue value, Coord coord)
         => GetObject(coord, value);
 
-    public Object UnaryVisit(Object argument, UnaryOperationType op, Coord coord)
+    public DynamicValue UnaryVisit(DynamicValue argument, UnaryOperationType op, Coord coord)
     {
         if (argument.Value is int && op == UnaryOperationType.Not || argument.Value is bool && op == UnaryOperationType.Negative)
         {
@@ -75,16 +75,16 @@ public class SemanticErrVisitor(Context context) : IVisitor
         switch (op)
         {
             case UnaryOperationType.Not:
-                return GetObject(coord, new Object(typeof(bool)));
+                return GetObject(coord, new DynamicValue(typeof(bool)));
             case UnaryOperationType.Negative:
-                return GetObject(coord, new Object(typeof(int)));
+                return GetObject(coord, new DynamicValue(typeof(int)));
             default:
                 AddException(coord, $"Unsupported {op}");
                 return GetObject(coord, null);
         }
     }
 
-    public Object BinaryVisit(Object left, BinaryOperationType op, Object right, Coord coord)
+    public DynamicValue BinaryVisit(DynamicValue left, BinaryOperationType op, DynamicValue right, Coord coord)
     {
         if (left.Type != right.Type)
         {
@@ -102,7 +102,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.Divide:
             case BinaryOperationType.Power:
             case BinaryOperationType.Modulus:
-                return GetObject(coord, new Object(typeof(int)));
+                return GetObject(coord, new DynamicValue(typeof(int)));
             case BinaryOperationType.Or:
             case BinaryOperationType.And:
             case BinaryOperationType.LessOrEqualThan:
@@ -111,7 +111,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.GreaterThan:
             case BinaryOperationType.Equal:
             case BinaryOperationType.NotEqual:
-                return GetObject(coord, new Object(typeof(bool)));
+                return GetObject(coord, new DynamicValue(typeof(bool)));
             default:
                 AddException(coord, $"Unsupported {op}");
                 return GetObject(coord, null);
@@ -128,7 +128,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
         }
     }
 
-    public void GotoVisit(string targetLabel, Object? condition, Coord coord)
+    public void GotoVisit(string targetLabel, DynamicValue? condition, Coord coord)
     {
         if (!Context.Labels.ContainsKey(targetLabel))
         {
@@ -159,19 +159,19 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     #region Tools
 
-    public Object GetObject(Coord coord, Object? value)
+    public DynamicValue GetObject(Coord coord, DynamicValue? value)
     {
         if (value is null)
         {
             AddException(coord, "Null value");
-            return new Object(value);
+            return new DynamicValue(value);
         }
         var type = value.Type;
         if (type != typeof(int) && type != typeof(bool) && type != typeof(string))
         {
             AddException(coord, "Unsupported value");
         }
-        return new Object(type);
+        return new DynamicValue(value);
     }
 
     public void AddException(Coord coord, string message)

@@ -5,9 +5,9 @@ namespace PixelWallE.Interfaces;
 
 public interface IHandle
 {
-    Object CallFunction(string Name, Object[] @params);
-    void CallAction(string Name, Object[] @params);
-    bool TryGetErrFunction(string Name, Object[] @params, out Object @object);
-    bool TryGetErrAction(string Name, Object[] @params, SemanticErrVisitor errVisitor);
+    DynamicValue CallFunction(string Name, DynamicValue[] @params);
+    void CallAction(string Name, DynamicValue[] @params);
+    bool TryGetErrFunction(string Name, DynamicValue[] @params, out DynamicValue @object);
+    bool TryGetErrAction(string Name, DynamicValue[] @params, SemanticErrVisitor errVisitor);
     SolidColorBrush ToBrush(string color);
 }

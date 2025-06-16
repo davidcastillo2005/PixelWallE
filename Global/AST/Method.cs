@@ -11,7 +11,7 @@ public abstract class Method(string identifier, IExpression[] arguments, Coord c
 
 public class Function(string identifier, IExpression[] arguments, Coord coord) : Method(identifier, arguments, coord), IExpression
 {
-    public Object Accept(IVisitor visitor)
+    public DynamicValue Accept(IVisitor visitor)
     {
         return visitor.FunctionVisit(Identifier, visitor.ParametersVisit(Arguments), Coord);
     }

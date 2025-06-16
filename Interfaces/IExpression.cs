@@ -1,6 +1,8 @@
+using PixelWallE.Global;
+
 namespace PixelWallE.Interfaces;
 
 public interface IExpression
 {
-    Object Accept(IVisitor visitor);
+    DynamicValue Accept(IVisitor visitor);
 }

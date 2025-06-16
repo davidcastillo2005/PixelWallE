@@ -10,7 +10,7 @@ public class BinaryExpreNode(IExpression left, IExpression right, BinaryOperatio
     public BinaryOperationType OperatorType { get; set; } = opType;
     public Coord Coord { get; set; } = coord;
 
-    public Object Accept(IVisitor visitor)
+    public DynamicValue Accept(IVisitor visitor)
         => visitor.BinaryVisit(LeftArg.Accept(visitor), OperatorType, RightArg.Accept(visitor), Coord);
 }
 public class UnaryExpreNode : IExpression
@@ -26,7 +26,7 @@ public class UnaryExpreNode : IExpression
         Coord = coord;
     }
 
-    public Object Accept(IVisitor visitor)
+    public DynamicValue Accept(IVisitor visitor)
         => visitor.UnaryVisit(Argument.Accept(visitor), OperatorType, Coord);
 }
 
@@ -35,12 +35,12 @@ public class VariableExpre(string identifier, Coord coord) : IExpression
     public string Identifier { get; set; } = identifier;
     public Coord Coord { get; set; } = coord;
 
-    public Object Accept(IVisitor visitor) => visitor.VariableVisit(Identifier, Coord);
+    public DynamicValue Accept(IVisitor visitor) => visitor.VariableVisit(Identifier, Coord);
 }
 
-public class LiteralExpre(Object value, Coord coord) : IExpression
+public class LiteralExpre(DynamicValue value, Coord coord) : IExpression
 {
-    public Object Value { get; set; } = value;
+    public DynamicValue Value { get; set; } = value;
     public Coord Coord { get; set; } = coord;
-    public Object Accept(IVisitor visitor) => visitor.LiteralVisit(Value, Coord);
+    public DynamicValue Accept(IVisitor visitor) => visitor.LiteralVisit(Value, Coord);
 }

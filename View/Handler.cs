@@ -19,21 +19,21 @@ namespace PixelWallE.View
         };
 
         #region Function
-        public Object CallFunction(string Name, Object[] @params) => Name switch
+        public DynamicValue CallFunction(string Name, DynamicValue[] @params) => Name switch
         {
-            "GetActualX" => new Object(GetActualX()),
-            "GetActualY" => new Object(GetActualY()),
-            "GetCanvasSize" => new Object(GetCanvasSize()),
-            "GetCanvasWidth" => new Object(GetCanvasWidth()),
-            "GetCanvasHeight" => new Object(GetCanvasHeight()),
-            "GetColorCount" => new Object(GetColorCount(@params[0].ToString(),
+            "GetActualX" => new DynamicValue(GetActualX()),
+            "GetActualY" => new DynamicValue(GetActualY()),
+            "GetCanvasSize" => new DynamicValue(GetCanvasSize()),
+            "GetCanvasWidth" => new DynamicValue(GetCanvasWidth()),
+            "GetCanvasHeight" => new DynamicValue(GetCanvasHeight()),
+            "GetColorCount" => new DynamicValue(GetColorCount(@params[0].ToString(),
                                                         @params[1].ToInterger(),
                                                         @params[2].ToInterger(),
                                                         @params[3].ToInterger(),
                                                         @params[4].ToInterger())),
-            "IsBrushColor" => new Object(IsBrushColor(@params[0].ToString())),
-            "IsBrushSize" => new Object(IsBrushSize(@params[0].ToInterger())),
-            "IsCanvascolor" => new Object(IsCanvasColor(@params[0].ToString(),
+            "IsBrushColor" => new DynamicValue(IsBrushColor(@params[0].ToString())),
+            "IsBrushSize" => new DynamicValue(IsBrushSize(@params[0].ToInterger())),
+            "IsCanvascolor" => new DynamicValue(IsCanvasColor(@params[0].ToString(),
                                                         @params[1].ToInterger(),
                                                         @params[2].ToInterger())),
             _ => throw new NotImplementedException(),
@@ -95,7 +95,7 @@ namespace PixelWallE.View
         #endregion
 
         #region Actions
-        public void CallAction(string Name, Object[] @params, Coord coord)
+        public void CallAction(string Name, DynamicValue[] @params, Coord coord)
         {
             switch (Name)
             {
@@ -318,39 +318,63 @@ namespace PixelWallE.View
         #endregion
 
         #region ErrFunction
-        public bool TryGetErrFunction(string identifier, Object[] @params, SemanticErrVisitor visitor, Coord coord, out Object @return)
+        public bool TryGetErrFunction(string identifier, DynamicValue[] @params, SemanticErrVisitor visitor, Coord coord, out DynamicValue @return)
         {
             switch (identifier)
             {
                 case "GetActualX":
                     AddMissArgErr(identifier, @params, visitor, coord, 0, out bool b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetActualXErr(visitor, coord);
                 case "GetActualY":
                     AddMissArgErr(identifier, @params, visitor, coord, 0, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetActualYErr(visitor, coord);
                 case "GetCanvasSize":
                     AddMissArgErr(identifier, @params, visitor, coord, 0, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetCanvasSizeErr(visitor, coord);
                 case "GetCanvasWidth":
                     AddMissArgErr(identifier, @params, visitor, coord, 0, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetCanvasWidthErr(visitor, coord);
                 case "GetCanvasHeight":
                     AddMissArgErr(identifier, @params, visitor, coord, 0, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetCanvasHeightErr(visitor, coord);
                 case "GetColorCount":
                     AddMissArgErr(identifier, @params, visitor, coord, 5, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return GetColorCountErr(@params[0].ToString(),
                                             @params[1].ToInterger(),
                                             @params[2].ToInterger(),
@@ -360,22 +384,36 @@ namespace PixelWallE.View
                                             coord);
                 case "IsBrushColor":
                     AddMissArgErr(identifier, @params, visitor, coord, 1, out b);
-                    @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return IsBrushColorErr(@params[0].ToString(),
                                            visitor,
                                            coord);
                 case "IsBrushSize":
                     AddMissArgErr(identifier, @params, visitor, coord, 1, out b);
                     @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return IsBrushSizeErr(@params[0].ToInterger(),
                                           visitor,
                                           coord);
                 case "IsCanvascolor":
                     AddMissArgErr(identifier, @params, visitor, coord, 3, out b);
                     @return = visitor.GetObject(coord, null);
-                    if (b) return b;
+                    if (b)
+                    {
+                        @return = visitor.GetObject(coord, null);
+                        return b;
+                    }
+                    @return = visitor.GetObject(coord, new DynamicValue(0));
                     return IsCanvasColorErr(@params[0].ToString(),
                                             @params[1].ToInterger(),
                                             @params[2].ToInterger(),
@@ -499,7 +537,7 @@ namespace PixelWallE.View
         #endregion
 
         #region ErrAction
-        public bool TryGetErrAction(string identifier, Object[] @params, SemanticErrVisitor visitor, Coord coord)
+        public bool TryGetErrAction(string identifier, DynamicValue[] @params, SemanticErrVisitor visitor, Coord coord)
         {
             switch (identifier)
             {
@@ -609,7 +647,7 @@ namespace PixelWallE.View
         }
 
         private void AddMissArgErr(string identifier,
-                                          Object[] @params,
+                                          DynamicValue[] @params,
                                           SemanticErrVisitor visitor,
                                           Coord coord,
                                           int argNum,
@@ -636,7 +674,7 @@ namespace PixelWallE.View
                 visitor.AddException(coord, $"Outside bounds <{x0}, {y0}> position");
                 return true;
             }
-            
+
             Window.WallE.Show();
             Window.WallE.SetPos(x0, y0);
             return false;
