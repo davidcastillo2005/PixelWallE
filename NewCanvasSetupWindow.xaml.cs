@@ -76,7 +76,6 @@ namespace PixelWallE
             if (!int.TryParse(str, out int height)
                 || height <= 0)
             {
-                MessageBox.Show("Invalid height.");
                 return;
             }
             CanvasHeight = height;
@@ -89,7 +88,6 @@ namespace PixelWallE
             if (!int.TryParse(str, out int width)
                 || width <= 0)
             {
-                MessageBox.Show("Invalid width.");
                 return;
             }
             CanvasWidth = width;

@@ -27,6 +27,8 @@ public class Object : IParsable<Object>
 
     public bool ToBoolean()
     {
+        if (Value is null)
+            return false;
         if (Value is not null && Value is bool bValue)
             return bValue;
         throw new Exception();
@@ -34,15 +36,19 @@ public class Object : IParsable<Object>
 
     public int ToInterger()
     {
-        if (Value is not null && Value is int iValue)
+        if (Value is null) 
+            return 0;
+        else if (Value is int iValue)
             return iValue;
         throw new Exception();
     }
 
     public override string ToString()
     {
-        if (Value is not null && Value is string sValue)
-            return sValue;
+        if (Value is null)
+            return "";
+        if (Value is not null && Value is string strValue)
+            return strValue;
         throw new Exception();
     }
 

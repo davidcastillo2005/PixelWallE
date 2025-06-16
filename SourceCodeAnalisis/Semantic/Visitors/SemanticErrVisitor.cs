@@ -1,7 +1,5 @@
-using PixelWallE.Global;
 using PixelWallE.Global.AST;
 using PixelWallE.Interfaces;
-using PixelWallE.SourceCodeAnalisis.Semantic;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
 namespace PixelWallE.SourceCodeAnalisis.Semantic.Visitors;
@@ -28,30 +26,26 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     public Object VariableVisit(string identifier, Coord coord)
     {
-        if (Context.Variables.TryGetValue(identifier, out Object? value))
+        if (Context.Variables.TryGetValue(identifier, out Object? @return))
         {
-            return GetResult(coord, value);
+            return GetObject(coord, @return);
         }
         AddException(coord, $"{identifier} not declared.");
-        return GetResult(coord, value);
+        return GetObject(coord, @return);
     }
 
     public void ActionVisit(string identifier, Object[] arguments, Coord coord)
     {
-        if (Context.Handler.TryGetErrAction(identifier, arguments, this))
-        {
-            AddException(coord, "Wall-E is already spawned.");
-        }
+        Context.Handler.TryGetErrAction(identifier, arguments, this, coord);
     }
 
     public Object FunctionVisit(string identifier, Object[] arguments, Coord coord)
     {
-        if (Context.Handler.TryGetErrFunction(identifier, arguments, out Object result))
+        if (Context.Handler.TryGetErrFunction(identifier, arguments, this, coord, out Object @return))
         {
-            //TODO Error: Method 'identifier' not declared.
-            throw new Exception();
+            return GetObject(coord, @return);
         }
-        return result;
+        return @return;
     }
 
     public Object[] ParametersVisit(IExpression[] parameters)
@@ -66,30 +60,28 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     public void AssignVisit(string identifier, Object value, Coord coord)
     {
-        if (!Context.Variables.ContainsKey(identifier))
-        {
-            //TODO Error: 
-        }
-        else
-        {
-            Context.Variables[identifier] = GetResult(coord, value);
-        }
+        Context.Variables[identifier] = GetObject(coord, value);
     }
 
     public Object LiteralVisit(Object value, Coord coord)
-        => GetResult(coord, value);
+        => GetObject(coord, value);
 
     public Object UnaryVisit(Object argument, UnaryOperationType op, Coord coord)
     {
-        if (argument.Value is int && op == UnaryOperationType.Not)
+        if (argument.Value is int && op == UnaryOperationType.Not || argument.Value is bool && op == UnaryOperationType.Negative)
         {
-            //TODO Error: Unsupported {op} for {argument.Type}.
+            AddException(coord, $"Unsupported {op} for {argument.Type}.");
         }
-        else if (argument.Value is bool && op == UnaryOperationType.Negative)
+        switch (op)
         {
-            //TODO Error: Unsupported {op} for {argument.Type}.
+            case UnaryOperationType.Not:
+                return GetObject(coord, new Object(typeof(bool)));
+            case UnaryOperationType.Negative:
+                return GetObject(coord, new Object(typeof(int)));
+            default:
+                AddException(coord, $"Unsupported {op}");
+                return GetObject(coord, null);
         }
-        return GetResult(coord, argument);
     }
 
     public Object BinaryVisit(Object left, BinaryOperationType op, Object right, Coord coord)
@@ -110,7 +102,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.Divide:
             case BinaryOperationType.Power:
             case BinaryOperationType.Modulus:
-                return GetResult(coord, new Object(typeof(int)));
+                return GetObject(coord, new Object(typeof(int)));
             case BinaryOperationType.Or:
             case BinaryOperationType.And:
             case BinaryOperationType.LessOrEqualThan:
@@ -119,9 +111,10 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.GreaterThan:
             case BinaryOperationType.Equal:
             case BinaryOperationType.NotEqual:
-                return GetResult(coord, new Object(typeof(bool)));
+                return GetObject(coord, new Object(typeof(bool)));
             default:
-                throw new Exception();
+                AddException(coord, $"Unsupported {op}");
+                return GetObject(coord, null);
         }
     }
 
@@ -129,6 +122,10 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (Context.Labels.ContainsKey(identifier))
             AddException(coord, $"{identifier} already declared.");
+        else
+        {
+            Context.Labels[identifier] = coord.Row - 1;
+        }
     }
 
     public void GotoVisit(string targetLabel, Object? condition, Coord coord)
@@ -162,7 +159,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     #region Tools
 
-    private Object GetResult(Coord coord, Object? value)
+    public Object GetObject(Coord coord, Object? value)
     {
         if (value is null)
         {

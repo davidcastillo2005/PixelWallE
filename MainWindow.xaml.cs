@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -24,13 +23,13 @@ namespace PixelWallE
         private readonly Handler handlers;
 
         public WallE WallE { get; set; }
-        public SolidColorBrush[,] Rectangles;
+        public Rectangle[,] Rectangles;
 
         public MainWindow()
         {
             InitializeComponent();
             WallE = new WallE();
-            handlers = new Handler(this, WallE);
+            handlers = new Handler(this);
             zoomFactor = 1;
             UpdateLastValidZoomFactor(1);
             ShowCanvasSetupWindow();
@@ -49,21 +48,6 @@ namespace PixelWallE
                 return;
 
             InitCanvas();
-            for (int y = 0; y < canvasHeight; y++)
-            {
-                for (int x = 0; x < canvasWidth; x++)
-                {
-                    Rectangle rect = new Rectangle
-                    {
-                        Height = rectSize,
-                        Width = rectSize,
-                        Fill = Brushes.Blue,
-                    };
-                    MainCanvas.Children.Add(rect);
-                    Canvas.SetLeft(rect, x * rectSize);
-                    Canvas.SetTop(rect, y * rectSize);
-                }
-            }
             MainCanvas.UpdateLayout();
         }
 
@@ -90,15 +74,15 @@ namespace PixelWallE
 
         private void ShowCanvasSetupWindow()
         {
-            NewCanvasSetupWindow canvasSetupWindow = new();
+            NewCanvasSetupWindow newCanvasSetupWindow = new();
 
-            bool? result = canvasSetupWindow.ShowDialog();
+            bool? result = newCanvasSetupWindow.ShowDialog();
             if (result != true)
             {
                 return;
             }
-            canvasHeight = canvasSetupWindow.CanvasHeight;
-            canvasWidth = canvasSetupWindow.CanvasWidth;
+            canvasHeight = newCanvasSetupWindow.CanvasHeight;
+            canvasWidth = newCanvasSetupWindow.CanvasWidth;
 
             UpdateMainCanvasSize();
         }
@@ -142,7 +126,7 @@ namespace PixelWallE
 
         public void DrawWallE()
         {
-            if (!WallE.isVisible)
+            if (!MainCanvas.Children.Contains(WallE.Image))
             {
                 MainCanvas.Children.Add(WallE.Image);
             }
@@ -152,47 +136,45 @@ namespace PixelWallE
             Canvas.SetTop(WallE.Image, GetWallEPosY() * rectSize);
         }
 
-        public void DrawPixel()
+        public void DrawPixel(int x, int y)
         {
-            Rectangles[(int)GetWallEPosX(), GetWallEPosY()] = (SolidColorBrush)GetWallEBrushColor();
-            Rectangle rect = new()
+            var rect = Rectangles[x, y];
+            var newBrush = (SolidColorBrush)GetWallEBrushColor();
+
+            if (!rect.Fill.Equals(newBrush))
             {
-                Fill = WallE.Brush
-            };
-            MainCanvas.Children.Add(rect);
-            rect.Width = rectSize;
-            rect.Height = rectSize;
-            Canvas.SetLeft(rect, GetWallEPosX() * rectSize);
-            Canvas.SetTop(rect, GetWallEPosY() * rectSize);
+                rect.Fill = newBrush;
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            SourceCodeAnalisis.Lexical.Lexer lexer = new PixelWallE.SourceCodeAnalisis.Lexical.Lexer();
+            Reset();
+            var lexer = new Lexer();
             var parser = new Parser();
             var context = new Context(handlers);
             var semanticErr = new SemanticErrVisitor(context);
             var interpreter = new InterpreterVisitor(context);
             var ast = GetAST(lexer, parser);
-
-            try
-            {
-                //CheckErr(semanticErr, ast);
-                if (semanticErr.Exceptions.Count != 0)
-                    PrintErr(semanticErr);
+            //try
+            //{
+            CheckErr(semanticErr, ast);
+            if (semanticErr.Exceptions.Count != 0)
+                PrintErr(semanticErr);
+            else
                 Execute(interpreter, ast);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
+            //}
         }
 
         private void CheckErr(SemanticErrVisitor semanticErr, IStatement ast) => ast.Accept(semanticErr);
 
         private void Execute(InterpreterVisitor interpreter, IStatement ast)
         {
-            Reset(interpreter);
+            Reset();
             ast.Accept(interpreter);
         }
 
@@ -219,22 +201,30 @@ namespace PixelWallE
 
         private void InitCanvas()
         {
-            Rectangles = new SolidColorBrush[canvasWidth, canvasHeight];
+            WallE.Reset();
+            MainCanvas.Children.Clear();
+            ProblemsTextBox.Document.Blocks.Clear();
+            Rectangles = new Rectangle[canvasWidth, canvasHeight];
             for (int i = 0; i < canvasWidth; i++)
             {
                 for (int j = 0; j < canvasHeight; j++)
                 {
-                    Rectangles[i, j] = Brushes.White;
+                    var rect = new Rectangle
+                    {
+                        Height = rectSize,
+                        Width = rectSize,
+                        Fill = Brushes.White,
+                    };
+                    Rectangles[i, j] = rect;
+                    MainCanvas.Children.Add(rect);
+                    Canvas.SetLeft(rect, i * rectSize);
+                    Canvas.SetTop(rect, j * rectSize);
                 }
             }
-            WallE.Reset();
-            MainCanvas.Children.Clear();
-            ProblemsTextBox.Document.Blocks.Clear();
         }
 
-        private void Reset(InterpreterVisitor interpreter)
+        private void Reset()
         {
-            interpreter.Context = new Context(handlers);
             InitCanvas();
         }
 
@@ -265,8 +255,13 @@ namespace PixelWallE
 
         public int GetCanvasHeight() => canvasHeight;
 
-        public int GetWallEBrushSize() => WallE.BrushSize;
+        public int GetWallEBrushThickness() => WallE.Thickness;
 
         public Brush GetWallEBrushColor() => WallE.Brush;
+
+        internal void ChangeBrushSize(int size)
+        {
+            WallE.Thickness = size;
+        }
     }
 }

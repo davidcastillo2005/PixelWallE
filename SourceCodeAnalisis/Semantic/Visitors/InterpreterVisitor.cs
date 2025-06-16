@@ -24,7 +24,7 @@ public class InterpreterVisitor(Context context) : IVisitor
     public Context Context { get; set; } = context;
     public void ActionVisit(string identifier, Object[] arguments, Coord coord)
     {
-        Context.Handler.CallAction(identifier, arguments);
+        Context.Handler.CallAction(identifier, arguments, coord);
     }
 
     public void GotoVisit(string targetLabel, Object? condition, Coord coord)

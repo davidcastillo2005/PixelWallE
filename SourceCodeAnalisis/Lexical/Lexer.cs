@@ -85,7 +85,7 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
                 case '-':
                     return GetDefaultToken(TokenType.Minus, "-", out token);
                 case '*':
-                    if (source[sourceIndex] == '*')
+                    if (source[sourceIndex] != '*')
                     {
                         sourceIndex++;
                         return GetDefaultToken(TokenType.Dot, "*", out token);
@@ -172,8 +172,7 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
         }
 
         private bool IsIdentifier(string input, int startIndex)
-            => sourceIndex < input.Length && !(char.IsDigit(input[sourceIndex]) && startIndex == sourceIndex)
-            && char.IsLetterOrDigit(input[sourceIndex]);
+            => sourceIndex < input.Length && !((char.IsDigit(input[sourceIndex]) || input[sourceIndex] == '-') && startIndex == sourceIndex) && (input[sourceIndex] == '-' || char.IsLetterOrDigit(input[sourceIndex]));
 
         #endregion
 
