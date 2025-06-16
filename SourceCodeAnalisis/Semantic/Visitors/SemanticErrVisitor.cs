@@ -164,14 +164,14 @@ public class SemanticErrVisitor(Context context) : IVisitor
         if (value is null)
         {
             AddException(coord, "Null value");
-            return new DynamicValue(value);
+            return new DynamicValue(new object());
         }
         var type = value.Type;
         if (type != typeof(int) && type != typeof(bool) && type != typeof(string))
         {
-            AddException(coord, "Unsupported value");
+            AddException(coord, "Unsupported type");
         }
-        return new DynamicValue(value);
+        return new DynamicValue(value.Value);
     }
 
     public void AddException(Coord coord, string message)

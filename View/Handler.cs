@@ -740,7 +740,7 @@ namespace PixelWallE.View
 
         private bool ColorErr(string color, SemanticErrVisitor visitor, Coord coord)
         {
-            if (stringToBrush.ContainsKey(color))
+            if (!stringToBrush.ContainsKey(color))
             {
                 visitor.AddException(coord, $"Unsupported '{color}' color");
                 return false;
