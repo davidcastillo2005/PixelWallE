@@ -5,7 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PixelWallE"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" 
+		Height="450" 
+		Width="800">
     <Grid>
         <GridSplitter
             Grid.Row="0"
@@ -58,7 +60,8 @@
                     Name="MainCanvas"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Background="White">
+                    Background="White"
+					MouseWheel ="MainCanvas_MouseWheel">
                 </Canvas>
             </Viewbox>
         </ScrollViewer>
@@ -115,41 +118,40 @@
                 VerticalAlignment="Center"
                 Background="WhiteSmoke">
                 <MenuItem 
-                    Header="_File">
+                    Header="File">
                     <MenuItem 
                         Name="NewMenuItem"
-                        Header="_New"
-                        Click="NewMenuItem_Click"
-                        Command="ApplicationCommands.New"/>
+                        Header="New"
+                        Click="NewMenuItem_Click"/>
                     <MenuItem
-                        Header="_Open"
-                        Command="ApplicationCommands.Open"/>
+                        Header="Open"
+						Click="OpenMenuItem_Click"/>
                     <MenuItem
-                        Header="_Save"
-                        Command="ApplicationCommands.Save"/>
+                        Header="Save"
+						Click="SaveMenuItem_Click"/>
                     <MenuItem
-                        Header="Save _As..."
-                        Command="ApplicationCommands.SaveAs"/>
+                        Header="Save As..."
+						Click="SaveAsMenuItem_Click"/>
                     <Separator/>
                     <MenuItem
                         x:Name="ExitMenuItem"
-                        Header="_Exit"
+                        Header="Exit"
                         Click="ExitMenuItem_Click"/>
                 </MenuItem>
                 <MenuItem 
-                    Header="_Edit">
+                    Header="Edit">
                     <MenuItem 
-                        Header="_Deshacer" 
+                        Header="Undo" 
                         Command="ApplicationCommands.Undo"/>
                     <MenuItem 
-                        Header="_Rehacer" 
+                        Header="Redo" 
                         Command="ApplicationCommands.Redo"/>
                     <Separator/>
                     <MenuItem 
-                        Header="_Cut" 
+                        Header="Cut" 
                         Command="ApplicationCommands.Cut"/>
                     <MenuItem 
-                        Header="_Copy" 
+                        Header="Copy" 
                         Command="ApplicationCommands.Copy"/>
                     <MenuItem 
                         Header="_Paste" 

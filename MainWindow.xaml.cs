@@ -1,9 +1,11 @@
-﻿using System.Windows;
+﻿using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Microsoft.Win32;
 using PixelWallE.Interfaces;
 using PixelWallE.SourceCodeAnalisis.Semantic;
 using PixelWallE.View;
@@ -21,6 +23,7 @@ namespace PixelWallE
         private double zoomFactor;
         private double lastValidZoomFactor;
         private readonly Handler handlers;
+        private string? currentFilePath = null;
 
         public WallE WallE { get; set; }
         public Rectangle[,] Rectangles;
@@ -30,10 +33,24 @@ namespace PixelWallE
             InitializeComponent();
             WallE = new WallE();
             handlers = new Handler(this);
-            zoomFactor = 1;
+            zoomFactor = GetDefaultZoom();
             UpdateLastValidZoomFactor(1);
-            ShowCanvasSetupWindow();
-            InitializeMainCanvas();
+            Rectangles = new Rectangle[0, 0];
+            MainCanvas.MouseWheel += MainCanvas_MouseWheel;
+            bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
+            if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
+            {
+                InitializeMainCanvas();
+            }
+            else
+            {
+                Close();
+            }
+        }
+
+        private double GetDefaultZoom()
+        {
+            double aspectRatio = (double)canvasHeight / canvasWidth;
         }
 
         private void UpdateMainCanvasSize()
@@ -62,9 +79,9 @@ namespace PixelWallE
             }
             else
             {
-                MainCanvas.LayoutTransform = new ScaleTransform(zoomFactor, zoomFactor);
-                MainCanvas.RenderTransformOrigin = new Point(0, 0);
+                MainCanvas.RenderTransform = new ScaleTransform(zoomFactor, zoomFactor);
             }
+            MainCanvas.RenderTransformOrigin = new Point(0.5f, 0.5f);
 
             UpdateLastValidZoomFactor(zoomFactor);
 
@@ -72,19 +89,24 @@ namespace PixelWallE
             MainScrollViewer.UpdateLayout();
         }
 
-        private void ShowCanvasSetupWindow()
+        private bool? ShowCanvasSetupWindow()
         {
             NewCanvasSetupWindow newCanvasSetupWindow = new();
 
             bool? result = newCanvasSetupWindow.ShowDialog();
             if (result != true)
             {
-                return;
+                return result;
+            }
+            if (newCanvasSetupWindow.CanvasHeight <= 0 || newCanvasSetupWindow.CanvasWidth <= 0)
+            {
+                return false;
             }
             canvasHeight = newCanvasSetupWindow.CanvasHeight;
             canvasWidth = newCanvasSetupWindow.CanvasWidth;
 
             UpdateMainCanvasSize();
+            return result;
         }
 
         private void ZoomTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -156,18 +178,19 @@ namespace PixelWallE
             var semanticErr = new SemanticErrVisitor(context);
             var interpreter = new InterpreterVisitor(context);
             var ast = GetAST(lexer, parser);
-            //try
-            //{
-            CheckErr(semanticErr, ast);
-            if (semanticErr.Exceptions.Count != 0)
-                PrintErr(semanticErr);
-            else
-                Execute(interpreter, ast);
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
-            //}
+
+            try
+            {
+                CheckErr(semanticErr, ast);
+                if (semanticErr.Exceptions.Count != 0)
+                    PrintErr(semanticErr);
+                else
+                    Execute(interpreter, ast);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
+            }
         }
 
         private void CheckErr(SemanticErrVisitor semanticErr, IStatement ast) => ast.Accept(semanticErr);
@@ -204,23 +227,7 @@ namespace PixelWallE
             WallE.Reset();
             MainCanvas.Children.Clear();
             ProblemsTextBox.Document.Blocks.Clear();
-            Rectangles = new Rectangle[canvasWidth, canvasHeight];
-            for (int i = 0; i < canvasWidth; i++)
-            {
-                for (int j = 0; j < canvasHeight; j++)
-                {
-                    var rect = new Rectangle
-                    {
-                        Height = rectSize,
-                        Width = rectSize,
-                        Fill = Brushes.White,
-                    };
-                    Rectangles[i, j] = rect;
-                    MainCanvas.Children.Add(rect);
-                    Canvas.SetLeft(rect, i * rectSize);
-                    Canvas.SetTop(rect, j * rectSize);
-                }
-            }
+            CreateCanvasRectangles();
         }
 
         private void Reset()
@@ -262,6 +269,89 @@ namespace PixelWallE
         internal void ChangeBrushSize(int size)
         {
             WallE.Thickness = size;
+        }
+
+        private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(currentFilePath))
+            {
+                SaveAsMenuItem_Click(sender, e);
+                return;
+            }
+            SaveToFile(currentFilePath);
+        }
+
+        private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFileDialog = new SaveFileDialog()
+            {
+                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
+                DefaultExt = ".pw",
+                AddExtension = true
+            };
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                SaveToFile(saveFileDialog.FileName);
+            }
+        }
+
+        private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog()
+            {
+                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
+                DefaultExt = ".pw",
+                AddExtension = true
+            };
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string text = File.ReadAllText(openFileDialog.FileName);
+                SourceCode.Document.Blocks.Clear();
+                SourceCode.Document.Blocks.Add(new Paragraph(new Run(text)));
+                currentFilePath = openFileDialog.FileName;
+            }
+        }
+
+        private void SaveToFile(string filePath) 
+        {
+            var start = SourceCode.Document.ContentStart;
+            var end = SourceCode.Document.ContentEnd;
+            var range = new TextRange(start, end);
+            File.WriteAllText(filePath, range.Text);
+            currentFilePath = filePath;
+        }
+
+        private void MainCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            double zoomDelta = e.Delta > 0 ? 0.1 : -0.1;
+            double newZoom = zoomFactor + zoomDelta;
+            if (newZoom < 0.1) newZoom = 0.1;
+            if (newZoom > 5.0) newZoom = 0.5;
+            zoomFactor = newZoom;
+            ZoomTextBox.Text = $"{(int)(zoomFactor * 100)}%";
+            ApplyZoom();
+            e.Handled = true;
+        }
+
+        private void CreateCanvasRectangles()
+        {
+            Rectangles = new Rectangle[canvasWidth, canvasHeight];
+            for (int i = 0; i < canvasWidth; i++)
+            {
+                for (int j = 0; j < canvasHeight; j++)
+                {
+                    var rect = new Rectangle
+                    {
+                        Height = rectSize,
+                        Width = rectSize,
+                        Fill = Brushes.White,
+                    };
+                    Rectangles[i, j] = rect;
+                    MainCanvas.Children.Add(rect);
+                    Canvas.SetLeft(rect, i * rectSize);
+                    Canvas.SetTop(rect, j * rectSize);
+                }
+            }
         }
     }
 }

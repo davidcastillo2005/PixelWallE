@@ -4,8 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PixelWallE"
-        mc:Ignorable="d"
-        Title="NewCanvasSetupWindow" Height="225" Width="400">
+        mc:Ignorable="d" 
+        Title="NewCanvasSetupWindow" 
+		Height="225" 
+		Width="400"
+		ResizeMode="NoResize">
     <Grid
         Name="MainGrid"
         Loaded="MainGrid_Loaded">
@@ -31,7 +34,8 @@
             Width="75"
             Height="25"
             IsCancel="True"
-            Content="Cancel" Click="CancelButton_Click"/>
+            Content="Cancel" 
+			Click="CancelButton_Click"/>
         <TextBlock
             Grid.Row="1"
             Grid.Column="0"
