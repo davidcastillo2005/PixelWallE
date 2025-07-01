@@ -18,23 +18,20 @@ namespace PixelWallE
     public partial class MainWindow : Window
     {
         private int canvasHeight;
-
         private int canvasWidth;
-        private const double rectSize = 1;
+        private const double RECTSIZE = 1;
         private double zoomFactor = 1;
         private double lastValidZoomFactor;
         private readonly Handler handler;
         private string? currentFilePath = null;
 
-        public WallE WallE { get; set; }
-        public Rectangle[,] Rectangles;
+        public WallE WallE { get; set; } = new WallE();
+        public Rectangle[,] Rectangles = new Rectangle[0, 0];
 
         public MainWindow()
         {
             InitializeComponent();
-            WallE = new WallE();
             handler = new Handler(this);
-            Rectangles = new Rectangle[0, 0];
             bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
             if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
             {
@@ -48,35 +45,27 @@ namespace PixelWallE
             }
         }
 
-        private void CopyMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.Copy();
-        }
+        #region Clicks
 
-        private void SelectAllMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.SelectAll();
-        }
+        private void CopyMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Copy();
 
-        private void PasteMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.Paste();
-        }
+        private void SelectAllMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.SelectAll();
 
-        private void RedoMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.Redo();
-        }
+        private void PasteMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Paste();
 
-        private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.Undo();
-        }
+        private void RedoMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Redo();
 
-        private void CutMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            SourceCode.Cut();
-        }
+        private void UndoMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Undo();
+
+        private void CutMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Cut();
+
+        private void OpenMenuItem_Click(object sender, RoutedEventArgs e) => OpenFile();
+
+        private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e) => SaveAs();
+
+        private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => Close();
+        
+        #endregion
 
         private double GetDefaultZoom()
         {
@@ -117,7 +106,7 @@ namespace PixelWallE
                 return;
             }
 
-            InitCanvas();
+            Reset();
             MainCanvas.UpdateLayout();
         }
 
@@ -192,9 +181,6 @@ namespace PixelWallE
         private void UpdateLastValidZoomFactor(double newZoomFactor)
             => lastValidZoomFactor = newZoomFactor;
 
-        private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
-            => Close();
-
         private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
             bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
@@ -210,10 +196,10 @@ namespace PixelWallE
             {
                 MainCanvas.Children.Add(WallE.Image);
             }
-            WallE.Image.Width = rectSize;
-            WallE.Image.Height = rectSize;
-            Canvas.SetLeft(WallE.Image, GetWallEPosX() * rectSize);
-            Canvas.SetTop(WallE.Image, GetWallEPosY() * rectSize);
+            WallE.Image.Width = RECTSIZE;
+            WallE.Image.Height = RECTSIZE;
+            Canvas.SetLeft(WallE.Image, GetWallEPosX() * RECTSIZE);
+            Canvas.SetTop(WallE.Image, GetWallEPosY() * RECTSIZE);
         }
 
         public void DrawPixel(int x, int y)
@@ -280,7 +266,7 @@ namespace PixelWallE
             return ast;
         }
 
-        private void InitCanvas()
+        private void Reset()
         {
             UpdateMainCanvasSize();
             WallE.Reset();
@@ -288,11 +274,6 @@ namespace PixelWallE
             OutputTextBox.Document.Blocks.Clear();
             ProblemsTextBox.Document.Blocks.Clear();
             CreateCanvasRectangles();
-        }
-
-        private void Reset()
-        {
-            InitCanvas();
         }
 
         private string ReadSourceCode()
@@ -326,10 +307,7 @@ namespace PixelWallE
 
         public Brush GetWallEBrushColor() => WallE.Brush;
 
-        internal void ChangeBrushSize(int size)
-        {
-            WallE.Thickness = size;
-        }
+        internal void ChangeBrushSize(int size) => WallE.Thickness = size;
 
         private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -341,7 +319,7 @@ namespace PixelWallE
             SaveToFile(currentFilePath);
         }
 
-        private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e)
+        private void SaveAs()
         {
             var saveFileDialog = new SaveFileDialog()
             {
@@ -353,11 +331,6 @@ namespace PixelWallE
             {
                 SaveToFile(saveFileDialog.FileName);
             }
-        }
-
-        private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFile();
         }
 
         private bool OpenFile()
@@ -397,14 +370,14 @@ namespace PixelWallE
                 {
                     var rect = new Rectangle
                     {
-                        Height = rectSize,
-                        Width = rectSize,
+                        Height = RECTSIZE,
+                        Width = RECTSIZE,
                         Fill = Brushes.White,
                     };
                     Rectangles[i, j] = rect;
                     MainCanvas.Children.Add(rect);
-                    Canvas.SetLeft(rect, i * rectSize);
-                    Canvas.SetTop(rect, j * rectSize);
+                    Canvas.SetLeft(rect, i * RECTSIZE);
+                    Canvas.SetTop(rect, j * RECTSIZE);
                 }
             }
         }
