@@ -21,6 +21,7 @@ namespace PixelWallE.View
         };
 
         #region Function
+
         public DynamicValue CallFunction(string Name, DynamicValue[] @params) => Name switch
         {
             "GetActualX" => new DynamicValue(GetActualX()),
@@ -96,262 +97,8 @@ namespace PixelWallE.View
 
         #endregion
 
-        #region Actions
-
-        public void CallAction(string Name, DynamicValue[] @params, Coord coord)
-        {
-            switch (Name)
-            {
-                case "Spawn":
-                    Spawn(@params[0].ToInterger(), @params[1].ToInterger());
-                    break;
-                case "Draw":
-                    Draw();
-                    break;
-                case "Plot":
-                    Plot(@params[0].ToInterger(), @params[1].ToInterger());
-                    break;
-                case "Move":
-                    Move(@params[0].ToInterger(), @params[1].ToInterger());
-                    break;
-                case "Size":
-                    Size(@params[0].ToInterger());
-                    break;
-                case "Color":
-                    Color(@params[0].ToString());
-                    break;
-                case "DrawLine":
-                    DrawLine(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
-                    break;
-                case "PlotLine":
-                    PlotLine(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger());
-                    break;
-                case "DrawCircle":
-                    DrawCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
-                    break;
-                case "PlotCircle":
-                    PlotCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
-                    break;
-                case "DrawRectangle":
-                    DrawRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger(), @params[4].ToInterger());
-                    break;
-                case "PlotRectangle":
-                    PlotRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger());
-                    break;
-                case "Fill":
-                    var x0 = GetActualX();
-                    var y0 = GetActualY();
-                    Fill(GetCurrentColor(x0, y0));
-                    Move(x0, y0);
-                    break;
-                case "Print":
-                    TryParse(@params[0], out string? printedParam);
-                    Print(printedParam!);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        private void TryParse(DynamicValue dynaValue, out string? printedParam)
-        {
-            
-            if (TryParse<int>(dynaValue, out printedParam) 
-                || TryParse<bool>(dynaValue, out printedParam)
-                || TryParse<string>(dynaValue, out printedParam))
-            {
-                return;
-            }
-        }
-
-        private bool TryParse<T>(DynamicValue dynaValue, out string? printedParam)
-        {
-            Type TType = typeof(T);
-            if (dynaValue.Value is not null && dynaValue.Type == TType)
-            {
-                printedParam = (string?)(((T)dynaValue.Value).ToString());
-                return true;
-            }
-            printedParam = null;
-            return false;
-        }
-
-        private void Spawn(int x, int y)
-        {
-            Window.WallE.SetPos(x, y);
-            Window.DrawWallE();
-            Window.WallE.Show();
-        }
-
-        private void Draw()
-        {
-            var x0 = GetActualX();
-            var y0 = GetActualY();
-            int offset = (Window.GetWallEBrushThickness() - 1) / 2;
-            if (offset < 0)
-                offset = -offset;
-            if (offset < 1)
-            {
-                if (!IsInsideBounds(x0, y0))
-                {
-                    return;
-                }
-                Window.DrawPixel(x0, y0);
-            }
-            else
-            {
-                for (int i = -offset; i <= offset; i++)
-                {
-                    for (int j = -offset; j <= offset; j++)
-                    {
-                        var X = x0 + i;
-                        var Y = y0 + j;
-                        if (!IsInsideBounds(X, Y))
-                        {
-                            continue;
-                        }
-                        Window.DrawPixel(X, Y);
-                    }
-                }
-            }
-        }
-
-        private void Plot(int x, int y)
-        {
-            Move(x, y);
-            Draw();
-        }
-
-        private void Move(int x, int y)
-        {
-            Window.WallE.SetPos(x, y);
-            Window.DrawWallE();
-        }
-
-        private void Color(string color) => Window.WallE.ChangeBrush(stringToBrush[color]);
-
-        private void Size(int size) => Window.ChangeBrushSize(size);
-
-        private void DrawLine(int x1, int y1, int d)
-        {
-            var x0 = GetActualX();
-            var y0 = GetActualY();
-            var X = x0 + (x1 * d);
-            var Y = y0 + (y1 * d);
-            PlotLine(x0, y0, X, Y);
-        }
-
-        private void PlotLine(int x0, int y0, int x1, int y1)
-        {
-            var dx = x1 - x0;
-            var dy = y1 - y0;
-            var step = Math.Max(Math.Abs(dx), Math.Abs(dy));
-            if (step != 0)
-            {
-                var stepX = (double)dx / step;
-
-                var stepY = (double)dy / step;
-                for (int i = 0; i < step + 1; i++)
-                {
-                    Plot((int)Math.Round(x0 + (i * stepX)), (int)Math.Round(y0 + (i * stepY)));
-                }
-            }
-        }
-
-        private void DrawRectangle(int dirX, int dirY, int distance, int width, int height)
-        {
-            var x0 = GetActualX() + (dirX * distance);
-            var y0 = GetActualX() + (dirY * distance);
-            PlotRectangle(x0, y0, width, height);
-            Move(x0, y0);
-        }
-
-        private void PlotRectangle(int x0, int y0, int width, int height)
-        {
-            if (height < 0) height = -1 * height;
-            if (width < 0) width = -1 * width;
-
-            for (int i = y0; i < y0 + height; i++)
-            {
-                Plot(x0 + width - 1, i);
-                Plot(x0 - width + 1, i);
-            }
-            for (int i = y0; i > y0 - height; i--)
-            {
-                Plot(x0 + width - 1, i);
-                Plot(x0 - width + 1, i);
-            }
-            for (int i = x0; i < x0 + width; i++)
-            {
-                Plot(i, y0 + height - 1);
-                Plot(i, y0 - height + 1);
-            }
-            for (int i = x0; i > x0 - width; i--)
-            {
-                Plot(i, y0 + height - 1);
-                Plot(i, y0 - height + 1);
-            }
-        }
-
-        private void DrawCircle(int dirX, int dirY, int radius)
-        {
-            var x0 = GetActualX() + dirX;
-            var y0 = GetActualY() + dirY;
-            PlotCircle(x0, y0, radius);
-            Move(x0, y0);
-        }
-
-        private void PlotCircle(int x0, int y0, int radius)
-        {
-            radius--;
-            var X = 0;
-            var Y = -radius;
-            while (X < -Y)
-            {
-                var yMid = Y + 0.5;
-                if ((X * X) + (yMid * yMid) > radius * radius)
-                {
-                    Y += 1;
-                }
-
-                Plot(x0 + X, y0 + Y);
-                Plot(x0 - X, y0 + Y);
-                Plot(x0 + X, y0 - Y);
-                Plot(x0 - X, y0 - Y);
-                Plot(x0 + Y, y0 + X);
-                Plot(x0 - Y, y0 + X);
-                Plot(x0 + Y, y0 - X);
-                Plot(x0 - Y, y0 - X);
-                X += 1;
-            }
-            Move(x0, y0);
-        }
-
-        private void Fill(SolidColorBrush brush)
-        {
-            var x0 = GetActualX();
-            var y0 = GetActualY();
-            (int x, int y)[] vArr = [(1, 0), (0, 1), (-1, 0), (0, -1)];
-            foreach (var (x, y) in vArr)
-            {
-                var X = x0 + x;
-                var Y = y0 + y;
-                var maxX = GetCanvasWidth();
-                var maxY = GetCanvasHeight();
-                if (!IsInsideBounds(X, Y) || brush != GetCurrentColor(X, Y))
-                {
-                    continue;
-                }
-                Plot(X, Y);
-                Fill(brush);
-            }
-        }
-
-        private void Print(string printedParam) => Window.Print(printedParam);
-        
-        #endregion
-
         #region ErrFunction
+
         public bool TryGetErrFunction(string identifier, DynamicValue[] @params, SemanticErrVisitor visitor, Coord coord, out DynamicValue @return)
         {
             switch (identifier)
@@ -570,7 +317,240 @@ namespace PixelWallE.View
 
         #endregion
 
+        #region Actions
+
+        public void CallAction(string Name, DynamicValue[] @params, Coord coord)
+        {
+            switch (Name)
+            {
+                case "Spawn":
+                    Spawn(@params[0].ToInterger(), @params[1].ToInterger());
+                    break;
+                case "Draw":
+                    Draw();
+                    break;
+                case "Plot":
+                    Plot(@params[0].ToInterger(), @params[1].ToInterger());
+                    break;
+                case "Move":
+                    Move(@params[0].ToInterger(), @params[1].ToInterger());
+                    break;
+                case "Size":
+                    Size(@params[0].ToInterger());
+                    break;
+                case "Color":
+                    Color(@params[0].ToString());
+                    break;
+                case "DrawLine":
+                    DrawLine(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
+                    break;
+                case "PlotLine":
+                    PlotLine(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger());
+                    break;
+                case "DrawCircle":
+                    DrawCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
+                    break;
+                case "PlotCircle":
+                    PlotCircle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger());
+                    break;
+                case "DrawRectangle":
+                    DrawRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger(), @params[4].ToInterger());
+                    break;
+                case "PlotRectangle":
+                    PlotRectangle(@params[0].ToInterger(), @params[1].ToInterger(), @params[2].ToInterger(), @params[3].ToInterger());
+                    break;
+                case "Fill":
+                    var x0 = GetActualX();
+                    var y0 = GetActualY();
+                    Fill(GetCurrentColor(x0, y0));
+                    Move(x0, y0);
+                    break;
+                case "Print":
+                    TryParse(@params[0], out string? printedParam);
+                    Print(printedParam!);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void Spawn(int x, int y)
+        {
+            Window.WallE.SetPos(x, y);
+            Window.DrawWallE();
+            Window.WallE.Show();
+        }
+
+        private void Draw()
+        {
+            var x0 = GetActualX();
+            var y0 = GetActualY();
+            int offset = (Window.GetWallEBrushThickness() - 1) / 2;
+            if (offset < 0)
+                offset = -offset;
+            if (offset < 1)
+            {
+                if (!IsInsideBounds(x0, y0))
+                {
+                    return;
+                }
+                Window.DrawPixel(x0, y0);
+            }
+            else
+            {
+                for (int i = -offset; i <= offset; i++)
+                {
+                    for (int j = -offset; j <= offset; j++)
+                    {
+                        var X = x0 + i;
+                        var Y = y0 + j;
+                        if (!IsInsideBounds(X, Y))
+                        {
+                            continue;
+                        }
+                        Window.DrawPixel(X, Y);
+                    }
+                }
+            }
+        }
+
+        private void Plot(int x, int y)
+        {
+            Move(x, y);
+            Draw();
+        }
+
+        private void Move(int x, int y)
+        {
+            Window.WallE.SetPos(x, y);
+            Window.DrawWallE();
+        }
+
+        private void Color(string color) => Window.WallE.ChangeBrush(stringToBrush[color]);
+
+        private void Size(int size) => Window.ChangeBrushSize(size);
+
+        private void DrawLine(int x1, int y1, int d)
+        {
+            var x0 = GetActualX();
+            var y0 = GetActualY();
+            var X = x0 + (x1 * d);
+            var Y = y0 + (y1 * d);
+            PlotLine(x0, y0, X, Y);
+        }
+
+        private void PlotLine(int x0, int y0, int x1, int y1)
+        {
+            var dx = x1 - x0;
+            var dy = y1 - y0;
+            var step = Math.Max(Math.Abs(dx), Math.Abs(dy));
+            if (step != 0)
+            {
+                var stepX = (double)dx / step;
+
+                var stepY = (double)dy / step;
+                for (int i = 0; i < step + 1; i++)
+                {
+                    Plot((int)Math.Round(x0 + (i * stepX)), (int)Math.Round(y0 + (i * stepY)));
+                }
+            }
+        }
+
+        private void DrawRectangle(int dirX, int dirY, int distance, int width, int height)
+        {
+            var x0 = GetActualX() + (dirX * distance);
+            var y0 = GetActualX() + (dirY * distance);
+            PlotRectangle(x0, y0, width, height);
+            Move(x0, y0);
+        }
+
+        private void PlotRectangle(int x0, int y0, int width, int height)
+        {
+            if (height < 0) height = -1 * height;
+            if (width < 0) width = -1 * width;
+
+            for (int i = y0; i < y0 + height; i++)
+            {
+                Plot(x0 + width - 1, i);
+                Plot(x0 - width + 1, i);
+            }
+            for (int i = y0; i > y0 - height; i--)
+            {
+                Plot(x0 + width - 1, i);
+                Plot(x0 - width + 1, i);
+            }
+            for (int i = x0; i < x0 + width; i++)
+            {
+                Plot(i, y0 + height - 1);
+                Plot(i, y0 - height + 1);
+            }
+            for (int i = x0; i > x0 - width; i--)
+            {
+                Plot(i, y0 + height - 1);
+                Plot(i, y0 - height + 1);
+            }
+        }
+
+        private void DrawCircle(int dirX, int dirY, int radius)
+        {
+            var x0 = GetActualX() + dirX;
+            var y0 = GetActualY() + dirY;
+            PlotCircle(x0, y0, radius);
+            Move(x0, y0);
+        }
+
+        private void PlotCircle(int x0, int y0, int radius)
+        {
+            radius--;
+            var X = 0;
+            var Y = -radius;
+            while (X < -Y)
+            {
+                var yMid = Y + 0.5;
+                if ((X * X) + (yMid * yMid) > radius * radius)
+                {
+                    Y += 1;
+                }
+
+                Plot(x0 + X, y0 + Y);
+                Plot(x0 - X, y0 + Y);
+                Plot(x0 + X, y0 - Y);
+                Plot(x0 - X, y0 - Y);
+                Plot(x0 + Y, y0 + X);
+                Plot(x0 - Y, y0 + X);
+                Plot(x0 + Y, y0 - X);
+                Plot(x0 - Y, y0 - X);
+                X += 1;
+            }
+            Move(x0, y0);
+        }
+
+        private void Fill(SolidColorBrush brush)
+        {
+            var x0 = GetActualX();
+            var y0 = GetActualY();
+            (int x, int y)[] vArr = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+            foreach (var (x, y) in vArr)
+            {
+                var X = x0 + x;
+                var Y = y0 + y;
+                var maxX = GetCanvasWidth();
+                var maxY = GetCanvasHeight();
+                if (!IsInsideBounds(X, Y) || brush != GetCurrentColor(X, Y))
+                {
+                    continue;
+                }
+                Plot(X, Y);
+                Fill(brush);
+            }
+        }
+
+        private void Print(string printedParam) => Window.Print(printedParam);
+
+        #endregion
+
         #region ErrAction
+
         public bool TryGetErrAction(string identifier, DynamicValue[] @params, SemanticErrVisitor visitor, Coord coord)
         {
             switch (identifier)
@@ -912,6 +892,8 @@ namespace PixelWallE.View
 
         #endregion
 
+        #region Tools
+
         private bool IsValidDirection(int dirX)
             => dirX == 1 || dirX == -1 || dirX == 0;
 
@@ -920,5 +902,30 @@ namespace PixelWallE.View
 
         private bool IsInsideBounds(int X, int Y)
             => X > -1 && Y > -1 && X < GetCanvasWidth() && Y < GetCanvasHeight();
+
+        private bool TryParse(DynamicValue dynaValue, out string? printedParam)
+        {
+            if (TryParse<int>(dynaValue, out printedParam)
+                || TryParse<bool>(dynaValue, out printedParam)
+                || TryParse<string>(dynaValue, out printedParam))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryParse<T>(DynamicValue dynaValue, out string? printedParam)
+        {
+            Type typeT = typeof(T);
+            if (dynaValue.Value is not null && dynaValue.Type == typeT)
+            {
+                printedParam = ((T)dynaValue.Value).ToString();
+                return true;
+            }
+            printedParam = null;
+            return false;
+        }
+        
+        #endregion
     }
 }
