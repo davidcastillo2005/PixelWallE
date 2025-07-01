@@ -1,4 +1,6 @@
-﻿using System.Windows.Media;
+﻿using System.CodeDom;
+using System.Printing.IndexedProperties;
+using System.Windows.Media;
 
 namespace PixelWallE.View
 {
@@ -95,6 +97,7 @@ namespace PixelWallE.View
         #endregion
 
         #region Actions
+
         public void CallAction(string Name, DynamicValue[] @params, Coord coord)
         {
             switch (Name)
@@ -141,9 +144,36 @@ namespace PixelWallE.View
                     Fill(GetCurrentColor(x0, y0));
                     Move(x0, y0);
                     break;
+                case "Print":
+                    TryParse(@params[0], out string? printedParam);
+                    Print(printedParam!);
+                    break;
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        private void TryParse(DynamicValue dynaValue, out string? printedParam)
+        {
+            
+            if (TryParse<int>(dynaValue, out printedParam) 
+                || TryParse<bool>(dynaValue, out printedParam)
+                || TryParse<string>(dynaValue, out printedParam))
+            {
+                return;
+            }
+        }
+
+        private bool TryParse<T>(DynamicValue dynaValue, out string? printedParam)
+        {
+            Type TType = typeof(T);
+            if (dynaValue.Value is not null && dynaValue.Type == TType)
+            {
+                printedParam = (string?)(((T)dynaValue.Value).ToString());
+                return true;
+            }
+            printedParam = null;
+            return false;
         }
 
         private void Spawn(int x, int y)
@@ -219,6 +249,7 @@ namespace PixelWallE.View
             if (step != 0)
             {
                 var stepX = (double)dx / step;
+
                 var stepY = (double)dy / step;
                 for (int i = 0; i < step + 1; i++)
                 {
@@ -315,6 +346,9 @@ namespace PixelWallE.View
                 Fill(brush);
             }
         }
+
+        private void Print(string printedParam) => Window.Print(printedParam);
+        
         #endregion
 
         #region ErrFunction
@@ -640,11 +674,17 @@ namespace PixelWallE.View
                     if (b) return b;
 
                     return FillErr(visitor, coord);
+                case "Print":
+                    AddMissArgErr(identifier, @params, visitor, coord, 1, out b);
+                    if (b) return b;
+                    return PrintErr();
                 default:
                     visitor.AddException(coord, $"Invalid '{identifier}' action");
                     return true;
             }
         }
+
+        private bool PrintErr() => true;
 
         private void AddMissArgErr(string identifier,
                                           DynamicValue[] @params,

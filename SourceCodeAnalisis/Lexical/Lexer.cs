@@ -27,7 +27,6 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
                     || TryGetStrToken(input, out token)
                     || TryGetIntToken(input, out token)
                     || TryGetSymToken(input, out token)
-                    //|| TryGetKeyword(input, out token)
                     || TryGetIdentifier(input, out token)))
                 {
                     tokens.Add(token!);
@@ -180,12 +179,18 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
 
         private bool TryGetStrToken(string input, out Token? token)
         {
+            int startIndex = sourceIndex;
+            if (TryMatchPattern(input, "\"") && TryMatchPattern(input, "\""))
+            {
+                return GetDefaultToken(TokenType.String, "", out token);
+            }
+            ResetSourceIndex(startIndex, out token);
             if (TryMatchPattern(input, "\"") && TryGetStrValue(input, out string? value) && TryMatchPattern(input, "\""))
             {
                 return GetDefaultToken(TokenType.String, value!, out token);
             }
             token = null;
-            return false;
+            return ResetSourceIndex(startIndex, out token);
         }
 
         private bool TryGetStrValue(string input, out string? tokenValue)

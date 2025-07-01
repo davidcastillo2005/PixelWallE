@@ -49,21 +49,15 @@
             Grid.Column="2"
             Grid.RowSpan="4"
             Name="MainScrollViewer"
-            HorizontalScrollBarVisibility="Auto"
-            VerticalScrollBarVisibility="Auto"
-            Background="LightGray">
-            <Viewbox
-                VerticalAlignment="Center"
+            Background="LightGray"
+			HorizontalScrollBarVisibility="Auto"
+			VerticalScrollBarVisibility="Auto">
+			<Canvas
+                Name="MainCanvas"
                 HorizontalAlignment="Center"
-                Stretch="Uniform">
-                <Canvas
-                    Name="MainCanvas"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Background="White"
-					MouseWheel ="MainCanvas_MouseWheel">
-                </Canvas>
-            </Viewbox>
+                VerticalAlignment="Center"
+                Background="White">
+			</Canvas>                
         </ScrollViewer>
         <Grid
             Grid.Row="3"
@@ -97,13 +91,6 @@
                         VerticalScrollBarVisibility="Visible"
                         HorizontalScrollBarVisibility="Auto"
                         Background="WhiteSmoke">
-                        <FlowDocument
-                            LineHeight="7">
-                            <Paragraph>
-                                <Run 
-                                    Text="..."/>
-                            </Paragraph>
-                        </FlowDocument>
                     </RichTextBox>
                 </TabItem>
             </TabControl>
@@ -141,25 +128,31 @@
                 <MenuItem 
                     Header="Edit">
                     <MenuItem 
-                        Header="Undo" 
-                        Command="ApplicationCommands.Undo"/>
+                        Name="UndoMenuItem"
+						Header="Undo"
+						Click="UndoMenuItem_Click"/>
                     <MenuItem 
-                        Header="Redo" 
-                        Command="ApplicationCommands.Redo"/>
+						Name="RedoMenuItem"
+                        Header="Redo"
+						Click="RedoMenuItem_Click"/>
                     <Separator/>
                     <MenuItem 
-                        Header="Cut" 
-                        Command="ApplicationCommands.Cut"/>
+						Name="CutMenuItem"
+                        Header="Cut"
+						Click="CutMenuItem_Click"/>
                     <MenuItem 
-                        Header="Copy" 
-                        Command="ApplicationCommands.Copy"/>
+						Name="CopyMenuItem"
+                        Header="Copy"
+						Click="CopyMenuItem_Click"/>
                     <MenuItem 
-                        Header="_Paste" 
-                        Command="ApplicationCommands.Paste"/>
+						Name="PasteMenuItem"
+                        Header="Paste"
+						Click="PasteMenuItem_Click"/>
                     <Separator/>
                     <MenuItem 
-                        Header="Select _All" 
-                        Command="ApplicationCommands.SelectAll"/>
+						Name="SelectAllMenuItem"
+                        Header="Select All"
+						Click="SelectAllMenuItem_Click"/>
                 </MenuItem>
             </Menu>
         </Grid>

@@ -18,11 +18,12 @@ namespace PixelWallE
     public partial class MainWindow : Window
     {
         private int canvasHeight;
+
         private int canvasWidth;
         private const double rectSize = 1;
-        private double zoomFactor;
+        private double zoomFactor = 1;
         private double lastValidZoomFactor;
-        private readonly Handler handlers;
+        private readonly Handler handler;
         private string? currentFilePath = null;
 
         public WallE WallE { get; set; }
@@ -32,25 +33,75 @@ namespace PixelWallE
         {
             InitializeComponent();
             WallE = new WallE();
-            handlers = new Handler(this);
-            zoomFactor = GetDefaultZoom();
-            UpdateLastValidZoomFactor(1);
+            handler = new Handler(this);
             Rectangles = new Rectangle[0, 0];
-            MainCanvas.MouseWheel += MainCanvas_MouseWheel;
             bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
             if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
             {
                 InitializeMainCanvas();
+                zoomFactor = GetDefaultZoom();
+                ApplyZoom();
             }
             else
-            {
-                Close();
+            { 
+                Close(); 
             }
+        }
+
+        private void CopyMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.Copy();
+        }
+
+        private void SelectAllMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.SelectAll();
+        }
+
+        private void PasteMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.Paste();
+        }
+
+        private void RedoMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.Redo();
+        }
+
+        private void UndoMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.Undo();
+        }
+
+        private void CutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SourceCode.Cut();
         }
 
         private double GetDefaultZoom()
         {
-            double aspectRatio = (double)canvasHeight / canvasWidth;
+            if (MainScrollViewer != null)
+            {
+                double availableWidth = MainScrollViewer.ViewportWidth;
+                double availableHeight = MainScrollViewer.ViewportHeight;
+
+                if (availableWidth == 0 || availableHeight == 0)
+                {
+                    availableWidth = MainScrollViewer.ActualWidth;
+                    availableHeight = MainScrollViewer.ActualHeight;
+                }
+
+                if (canvasWidth == 0 
+                    || canvasHeight == 0 
+                    || availableWidth == 0 
+                    || availableHeight == 0)
+                    return 1;
+
+                double scaleX = availableWidth / canvasWidth;
+                double scaleY = availableHeight / canvasHeight;
+                return Math.Min(scaleX, scaleY);
+            }
+            return 1;
         }
 
         private void UpdateMainCanvasSize()
@@ -61,8 +112,10 @@ namespace PixelWallE
 
         private void InitializeMainCanvas()
         {
-            if (canvasHeight != 0 || canvasWidth != 0)
+            if (canvasHeight == 0 || canvasWidth == 0)
+            {
                 return;
+            }
 
             InitCanvas();
             MainCanvas.UpdateLayout();
@@ -72,16 +125,15 @@ namespace PixelWallE
         {
             if (MainCanvas == null)
                 return;
-            if (MainCanvas.RenderTransform is ScaleTransform scaleTransform)
+            if (MainCanvas.LayoutTransform is ScaleTransform scaleTransform)
             {
                 scaleTransform.ScaleX = zoomFactor;
                 scaleTransform.ScaleY = zoomFactor;
             }
             else
             {
-                MainCanvas.RenderTransform = new ScaleTransform(zoomFactor, zoomFactor);
+                MainCanvas.LayoutTransform = new ScaleTransform(zoomFactor, zoomFactor);
             }
-            MainCanvas.RenderTransformOrigin = new Point(0.5f, 0.5f);
 
             UpdateLastValidZoomFactor(zoomFactor);
 
@@ -144,7 +196,13 @@ namespace PixelWallE
             => Close();
 
         private void NewMenuItem_Click(object sender, RoutedEventArgs e)
-            => ShowCanvasSetupWindow();
+        {
+            bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
+            if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
+            {
+                Reset();
+            }
+        }
 
         public void DrawWallE()
         {
@@ -174,7 +232,7 @@ namespace PixelWallE
             Reset();
             var lexer = new Lexer();
             var parser = new Parser();
-            var context = new Context(handlers);
+            var context = new Context(handler);
             var semanticErr = new SemanticErrVisitor(context);
             var interpreter = new InterpreterVisitor(context);
             var ast = GetAST(lexer, parser);
@@ -224,8 +282,10 @@ namespace PixelWallE
 
         private void InitCanvas()
         {
+            UpdateMainCanvasSize();
             WallE.Reset();
             MainCanvas.Children.Clear();
+            OutputTextBox.Document.Blocks.Clear();
             ProblemsTextBox.Document.Blocks.Clear();
             CreateCanvasRectangles();
         }
@@ -297,6 +357,11 @@ namespace PixelWallE
 
         private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            OpenFile();
+        }
+
+        private bool OpenFile()
+        {
             var openFileDialog = new OpenFileDialog()
             {
                 Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
@@ -309,28 +374,18 @@ namespace PixelWallE
                 SourceCode.Document.Blocks.Clear();
                 SourceCode.Document.Blocks.Add(new Paragraph(new Run(text)));
                 currentFilePath = openFileDialog.FileName;
+                return true;
             }
+            return false;
         }
 
-        private void SaveToFile(string filePath) 
+        private void SaveToFile(string filePath)
         {
             var start = SourceCode.Document.ContentStart;
             var end = SourceCode.Document.ContentEnd;
             var range = new TextRange(start, end);
             File.WriteAllText(filePath, range.Text);
             currentFilePath = filePath;
-        }
-
-        private void MainCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            double zoomDelta = e.Delta > 0 ? 0.1 : -0.1;
-            double newZoom = zoomFactor + zoomDelta;
-            if (newZoom < 0.1) newZoom = 0.1;
-            if (newZoom > 5.0) newZoom = 0.5;
-            zoomFactor = newZoom;
-            ZoomTextBox.Text = $"{(int)(zoomFactor * 100)}%";
-            ApplyZoom();
-            e.Handled = true;
         }
 
         private void CreateCanvasRectangles()
@@ -352,6 +407,14 @@ namespace PixelWallE
                     Canvas.SetTop(rect, j * rectSize);
                 }
             }
+        }
+
+        public void Print(string text)
+        {
+            Paragraph paragraph = new();
+            Run run = new(text);
+            paragraph.Inlines.Add(run);
+            OutputTextBox.Document.Blocks.Add(paragraph);
         }
     }
 }

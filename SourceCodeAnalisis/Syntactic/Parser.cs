@@ -45,6 +45,7 @@ public class Parser
         CodeBlock node = new([.. Lines]);
         return GetDefaultExpre(node, out expre);
     }
+
     private bool TryGetGoToStatement(Token[] tokens, out IStatement? lineExpre)
     {
         int startIndex = tokenIndex;
