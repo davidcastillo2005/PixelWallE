@@ -32,7 +32,7 @@ public class DynamicValue : IParsable<DynamicValue>
         return (bool)Value;
     }
 
-    public int ToInterger()
+    public int ToInt()
     {
         if (Value is null)
             return 0;
@@ -55,8 +55,8 @@ public class DynamicValue : IParsable<DynamicValue>
     public static DynamicValue operator |(DynamicValue a, DynamicValue b) => new((dynamic)a.Value! | (dynamic)b.Value!);
     public static DynamicValue operator ^(DynamicValue a, DynamicValue b)
     {
-        if (a.Value is double castedA && b.Value is double castedB)
-            return new DynamicValue(Math.Pow(castedA, castedB), a.Type);
+        if (a.Value is int castedA && b.Value is int castedB)
+            return new DynamicValue((int)Math.Pow(castedA, castedB), a.Type);
         throw new Exception();
     }
     public static DynamicValue operator ==(DynamicValue a, DynamicValue b) => new((dynamic)a.Value! == (dynamic)b.Value!);

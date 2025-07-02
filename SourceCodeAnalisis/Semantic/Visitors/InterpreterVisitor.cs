@@ -8,24 +8,10 @@ namespace PixelWallE.SourceCodeAnalisis.Semantic.Visitors;
 
 public class InterpreterVisitor(Context context) : IVisitor
 {
-    /*
-    1- Variable
-    2- Action
-    3- Function
-    3- Parameters
-    4- Assign
-    5- Literal
-    6- Unary
-    7- Binary
-    8- Label
-    9- Goto
-    10- CodeBlock
-    */
     public Context Context { get; set; } = context;
+
     public void ActionVisit(string identifier, DynamicValue[] arguments, Coord coord)
-    {
-        Context.Handler.CallAction(identifier, arguments, coord);
-    }
+        => Context.Handler.CallAction(identifier, arguments, coord);
 
     public void GotoVisit(string targetLabel, DynamicValue? condition, Coord coord)
     {
@@ -38,9 +24,11 @@ public class InterpreterVisitor(Context context) : IVisitor
         Context.Jump(targetLabel);
     }
 
-    public void AssignVisit(string identifier, DynamicValue value, Coord coord) => Context.Variables[identifier] = value;
+    public void AssignVisit(string identifier, DynamicValue value, Coord coord)
+        => Context.Variables[identifier] = value;
 
-    public void LabelVisit(string identifier, Coord coord) => Context.Labels[identifier] = coord.Row - 1;
+    public void LabelVisit(string identifier, Coord coord)
+        => Context.Labels[identifier] = coord.Row - 1;
 
     public DynamicValue BinaryVisit(DynamicValue left, BinaryOperationType op, DynamicValue right, Coord coord) => op switch
     {
@@ -58,7 +46,7 @@ public class InterpreterVisitor(Context context) : IVisitor
         BinaryOperationType.NotEqual => left! != right!,
         BinaryOperationType.And => left! & right!,
         BinaryOperationType.Or => left! | right!,
-        _ => throw new NotImplementedException(),
+        _ => throw new Exception(),
     };
 
     public DynamicValue[] ParametersVisit(IExpression[] expressions)
@@ -72,14 +60,10 @@ public class InterpreterVisitor(Context context) : IVisitor
     }
 
     public DynamicValue FunctionVisit(string identifier, DynamicValue[] arguments, Coord coord)
-    {
-        return Context.Handler.CallFunction(identifier, arguments);
-    }
+        => Context.Handler.CallFunction(identifier, arguments);
 
     public DynamicValue LiteralVisit(DynamicValue value, Coord coord)
-    {
-        return value;
-    }
+        => value;
 
     public DynamicValue UnaryVisit(DynamicValue argument, UnaryOperationType op, Coord coord) => op switch
     {
@@ -94,7 +78,7 @@ public class InterpreterVisitor(Context context) : IVisitor
         if (result is not null)
             return result;
         else
-            throw new NotImplementedException();
+            throw new Exception();
     }
 
     public void Visit(IStatement statement, Coord coord) => statement.Accept(this);

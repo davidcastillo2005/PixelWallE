@@ -6,6 +6,7 @@ namespace PixelWallE.SourceCodeAnalisis.Syntactic.Extensions;
 public static class OperatorExtension
 {
     public static BinaryOperationType ToBinaryType(this TokenType type) => type switch
+    
     {
         TokenType.Plus => BinaryOperationType.Add,
         TokenType.Minus => BinaryOperationType.Subtract,

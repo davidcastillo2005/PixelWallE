@@ -86,11 +86,11 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
                 case '*':
                     if (source[sourceIndex] != '*')
                     {
-                        sourceIndex++;
                         return GetDefaultToken(TokenType.Dot, "*", out token);
                     }
                     else
                     {
+                        sourceIndex++;
                         return GetDefaultToken(TokenType.Exponentiation, "**", out token);
                     }
 

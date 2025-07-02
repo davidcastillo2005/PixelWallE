@@ -28,10 +28,10 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (Context.Variables.TryGetValue(identifier, out DynamicValue? @return))
         {
-            return GetObject(coord, @return);
+            return CheckDynamicValue(coord, @return);
         }
         AddException(coord, $"{identifier} not declared.");
-        return GetObject(coord, @return);
+        return CheckDynamicValue(coord, @return);
     }
 
     public void ActionVisit(string identifier, DynamicValue[] arguments, Coord coord)
@@ -43,7 +43,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (Context.Handler.TryGetErrFunction(identifier, arguments, this, coord, out DynamicValue @return))
         {
-            return GetObject(coord, @return);
+            return CheckDynamicValue(coord, @return);
         }
         return @return;
     }
@@ -60,11 +60,11 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     public void AssignVisit(string identifier, DynamicValue value, Coord coord)
     {
-        Context.Variables[identifier] = GetObject(coord, value);
+        Context.Variables[identifier] = CheckDynamicValue(coord, value);
     }
 
     public DynamicValue LiteralVisit(DynamicValue value, Coord coord)
-        => GetObject(coord, value);
+        => CheckDynamicValue(coord, value);
 
     public DynamicValue UnaryVisit(DynamicValue argument, UnaryOperationType op, Coord coord)
     {
@@ -75,12 +75,12 @@ public class SemanticErrVisitor(Context context) : IVisitor
         switch (op)
         {
             case UnaryOperationType.Not:
-                return GetObject(coord, new DynamicValue(typeof(bool)));
+                return CheckDynamicValue(coord, new DynamicValue(typeof(bool)));
             case UnaryOperationType.Negative:
-                return GetObject(coord, new DynamicValue(typeof(int)));
+                return CheckDynamicValue(coord, new DynamicValue(typeof(int)));
             default:
                 AddException(coord, $"Unsupported {op}");
-                return GetObject(coord, null);
+                return CheckDynamicValue(coord, null);
         }
     }
 
@@ -102,7 +102,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.Divide:
             case BinaryOperationType.Power:
             case BinaryOperationType.Modulus:
-                return GetObject(coord, new DynamicValue(typeof(int)));
+                return CheckDynamicValue(coord, new DynamicValue(typeof(int)));
             case BinaryOperationType.Or:
             case BinaryOperationType.And:
             case BinaryOperationType.LessOrEqualThan:
@@ -111,10 +111,10 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.GreaterThan:
             case BinaryOperationType.Equal:
             case BinaryOperationType.NotEqual:
-                return GetObject(coord, new DynamicValue(typeof(bool)));
+                return CheckDynamicValue(coord, new DynamicValue(typeof(bool)));
             default:
                 AddException(coord, $"Unsupported {op}");
-                return GetObject(coord, null);
+                return CheckDynamicValue(coord, null);
         }
     }
 
@@ -159,19 +159,19 @@ public class SemanticErrVisitor(Context context) : IVisitor
 
     #region Tools
 
-    public DynamicValue GetObject(Coord coord, DynamicValue? value)
+    public DynamicValue CheckDynamicValue(Coord coord, DynamicValue? value)
     {
         if (value is null)
         {
             AddException(coord, "Null value");
-            return new DynamicValue(new object());
+            return new DynamicValue(null!);
         }
         var type = value.Type;
         if (type != typeof(int) && type != typeof(bool) && type != typeof(string))
         {
             AddException(coord, "Unsupported type");
         }
-        return new DynamicValue(value.Value);
+        return value;
     }
 
     public void AddException(Coord coord, string message)

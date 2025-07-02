@@ -40,12 +40,12 @@ namespace PixelWallE
                 ApplyZoom();
             }
             else
-            { 
-                Close(); 
+            {
+                Close();
             }
         }
 
-        #region Clicks
+        #region Events
 
         private void CopyMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Copy();
 
@@ -64,51 +64,58 @@ namespace PixelWallE
         private void SaveAsMenuItem_Click(object sender, RoutedEventArgs e) => SaveAs();
 
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => Close();
-        
-        #endregion
 
-        private double GetDefaultZoom()
+        private void Button_Click(object sender, RoutedEventArgs e) => Run();
+
+        private void NewMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (MainScrollViewer != null)
-            {
-                double availableWidth = MainScrollViewer.ViewportWidth;
-                double availableHeight = MainScrollViewer.ViewportHeight;
-
-                if (availableWidth == 0 || availableHeight == 0)
-                {
-                    availableWidth = MainScrollViewer.ActualWidth;
-                    availableHeight = MainScrollViewer.ActualHeight;
-                }
-
-                if (canvasWidth == 0 
-                    || canvasHeight == 0 
-                    || availableWidth == 0 
-                    || availableHeight == 0)
-                    return 1;
-
-                double scaleX = availableWidth / canvasWidth;
-                double scaleY = availableHeight / canvasHeight;
-                return Math.Min(scaleX, scaleY);
-            }
-            return 1;
+            bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
+            if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
+                Reset();
         }
 
-        private void UpdateMainCanvasSize()
+        private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MainCanvas.Height = canvasHeight;
-            MainCanvas.Width = canvasWidth;
-        }
-
-        private void InitializeMainCanvas()
-        {
-            if (canvasHeight == 0 || canvasWidth == 0)
+            if (string.IsNullOrEmpty(currentFilePath))
             {
+                SaveAsMenuItem_Click(sender, e);
                 return;
             }
-
-            Reset();
-            MainCanvas.UpdateLayout();
+            SaveFile(currentFilePath);
         }
+
+        private void ZoomTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+                return;
+            string[] subStrings = ZoomTextBox.Text.Split('%');
+            string lastZoomFactorText = $"{lastValidZoomFactor * 100}";
+            if ((double.TryParse(subStrings[0], out double zoomPercent)
+                || double.TryParse(ZoomTextBox.Text, out zoomPercent))
+                && (zoomPercent > 0))
+            {
+                zoomFactor = zoomPercent * 0.01f;
+                ZoomTextBox.Text = zoomPercent.ToString() + "%";
+                ApplyZoom();
+            }
+            else
+            {
+                InvalidZoom(lastZoomFactorText);
+            }
+        }
+
+        #endregion
+
+        #region Zoom
+
+        private void InvalidZoom(string lastZoomFactorText)
+        {
+            MessageBox.Show("Invalid zoom factor.");
+            ZoomTextBox.Text = lastZoomFactorText + "%";
+        }
+
+        private void UpdateLastValidZoomFactor(double newZoomFactor)
+            => lastValidZoomFactor = newZoomFactor;
 
         private void ApplyZoom()
         {
@@ -130,159 +137,35 @@ namespace PixelWallE
             MainScrollViewer.UpdateLayout();
         }
 
-        private bool? ShowCanvasSetupWindow()
+        private double GetDefaultZoom()
         {
-            NewCanvasSetupWindow newCanvasSetupWindow = new();
-
-            bool? result = newCanvasSetupWindow.ShowDialog();
-            if (result != true)
+            if (MainScrollViewer != null)
             {
-                return result;
-            }
-            if (newCanvasSetupWindow.CanvasHeight <= 0 || newCanvasSetupWindow.CanvasWidth <= 0)
-            {
-                return false;
-            }
-            canvasHeight = newCanvasSetupWindow.CanvasHeight;
-            canvasWidth = newCanvasSetupWindow.CanvasWidth;
+                double availableWidth = MainScrollViewer.ViewportWidth;
+                double availableHeight = MainScrollViewer.ViewportHeight;
 
-            UpdateMainCanvasSize();
-            return result;
-        }
-
-        private void ZoomTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter)
-                return;
-            string[] subStrings = ZoomTextBox.Text.Split('%');
-            string lastZoomFactorText = $"{lastValidZoomFactor * 100}";
-            if (double.TryParse(subStrings[0], out double zoomPercent)
-                || double.TryParse(ZoomTextBox.Text, out zoomPercent))
-            {
-                if (zoomPercent > 0)
+                if (availableWidth == 0 || availableHeight == 0)
                 {
-                    zoomFactor = zoomPercent * 0.01f;
-                    ZoomTextBox.Text = zoomPercent.ToString() + "%";
-                    ApplyZoom();
+                    availableWidth = MainScrollViewer.ActualWidth;
+                    availableHeight = MainScrollViewer.ActualHeight;
                 }
-                else
-                {
-                    MessageBox.Show("Zoom factor must be greater than 0.");
-                    ZoomTextBox.Text = lastZoomFactorText + "%";
-                }
+
+                if (canvasWidth == 0
+                    || canvasHeight == 0
+                    || availableWidth == 0
+                    || availableHeight == 0)
+                    return 1;
+
+                double scaleX = availableWidth / canvasWidth;
+                double scaleY = availableHeight / canvasHeight;
+                return Math.Min(scaleX, scaleY);
             }
-            else
-            {
-                MessageBox.Show("Invalid zoom factor.");
-                ZoomTextBox.Text = lastZoomFactorText + "%";
-            }
+            return 1;
         }
 
-        private void UpdateLastValidZoomFactor(double newZoomFactor)
-            => lastValidZoomFactor = newZoomFactor;
+        #endregion
 
-        private void NewMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
-            if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
-            {
-                Reset();
-            }
-        }
-
-        public void DrawWallE()
-        {
-            if (!MainCanvas.Children.Contains(WallE.Image))
-            {
-                MainCanvas.Children.Add(WallE.Image);
-            }
-            WallE.Image.Width = RECTSIZE;
-            WallE.Image.Height = RECTSIZE;
-            Canvas.SetLeft(WallE.Image, GetWallEPosX() * RECTSIZE);
-            Canvas.SetTop(WallE.Image, GetWallEPosY() * RECTSIZE);
-        }
-
-        public void DrawPixel(int x, int y)
-        {
-            var rect = Rectangles[x, y];
-            var newBrush = (SolidColorBrush)GetWallEBrushColor();
-
-            if (!rect.Fill.Equals(newBrush))
-            {
-                rect.Fill = newBrush;
-            }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Reset();
-            var lexer = new Lexer();
-            var parser = new Parser();
-            var context = new Context(handler);
-            var semanticErr = new SemanticErrVisitor(context);
-            var interpreter = new InterpreterVisitor(context);
-            var ast = GetAST(lexer, parser);
-
-            try
-            {
-                CheckErr(semanticErr, ast);
-                if (semanticErr.Exceptions.Count != 0)
-                    PrintErr(semanticErr);
-                else
-                    Execute(interpreter, ast);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
-            }
-        }
-
-        private void CheckErr(SemanticErrVisitor semanticErr, IStatement ast) => ast.Accept(semanticErr);
-
-        private void Execute(InterpreterVisitor interpreter, IStatement ast)
-        {
-            Reset();
-            ast.Accept(interpreter);
-        }
-
-        private void PrintErr(SemanticErrVisitor semanticErr)
-        {
-            foreach (var item in semanticErr.Exceptions)
-            {
-                string errMessage = item.PrintMessage();
-                Paragraph paragraph = new();
-                Run run = new(errMessage);
-                paragraph.Inlines.Add(run);
-                ProblemsTextBox.Document.Blocks.Add(paragraph);
-            }
-            ProblemsTextBox.ScrollToEnd();
-        }
-
-        private IStatement GetAST(Lexer lexer, Parser parser)
-        {
-            var code = ReadSourceCode();
-            var tokens = lexer.Scan(code);
-            var ast = parser.Parse(tokens);
-            return ast;
-        }
-
-        private void Reset()
-        {
-            UpdateMainCanvasSize();
-            WallE.Reset();
-            MainCanvas.Children.Clear();
-            OutputTextBox.Document.Blocks.Clear();
-            ProblemsTextBox.Document.Blocks.Clear();
-            CreateCanvasRectangles();
-        }
-
-        private string ReadSourceCode()
-        {
-            var start = SourceCode.Document.ContentStart;
-            var end = SourceCode.Document.ContentEnd;
-            var range = new TextRange(start, end);
-            return range.Text;
-        }
+        #region Canvas
 
         public int GetCanvasSize()
         {
@@ -290,75 +173,39 @@ namespace PixelWallE
             {
                 return canvasWidth;
             }
-            throw new NotImplementedException();
+            throw new Exception();
         }
-
-        public bool GetWallEVisibility() => WallE.isVisible;
-
-        public int GetWallEPosX() => (int)WallE.PositionX!;
-
-        public int GetWallEPosY() => (int)WallE.PositionY!;
 
         public int GetCanvasWidth() => canvasWidth;
 
         public int GetCanvasHeight() => canvasHeight;
 
-        public int GetWallEBrushThickness() => WallE.Thickness;
 
-        public Brush GetWallEBrushColor() => WallE.Brush;
-
-        internal void ChangeBrushSize(int size) => WallE.Thickness = size;
-
-        private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
+        private void UpdateMainCanvasSize()
         {
-            if (string.IsNullOrEmpty(currentFilePath))
+            MainCanvas.Height = canvasHeight;
+            MainCanvas.Width = canvasWidth;
+        }
+
+        private void InitializeMainCanvas()
+        {
+            if (canvasHeight == 0 || canvasWidth == 0)
             {
-                SaveAsMenuItem_Click(sender, e);
                 return;
             }
-            SaveToFile(currentFilePath);
+            Reset();
+            MainCanvas.UpdateLayout();
         }
 
-        private void SaveAs()
+        public void DrawPixel(int x, int y)
         {
-            var saveFileDialog = new SaveFileDialog()
+            var rect = Rectangles[x, y];
+            var newBrush = GetWallEBrushColor();
+
+            if (!rect.Fill.Equals(newBrush))
             {
-                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
-                DefaultExt = ".pw",
-                AddExtension = true
-            };
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                SaveToFile(saveFileDialog.FileName);
+                rect.Fill = newBrush;
             }
-        }
-
-        private bool OpenFile()
-        {
-            var openFileDialog = new OpenFileDialog()
-            {
-                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
-                DefaultExt = ".pw",
-                AddExtension = true
-            };
-            if (openFileDialog.ShowDialog() == true)
-            {
-                string text = File.ReadAllText(openFileDialog.FileName);
-                SourceCode.Document.Blocks.Clear();
-                SourceCode.Document.Blocks.Add(new Paragraph(new Run(text)));
-                currentFilePath = openFileDialog.FileName;
-                return true;
-            }
-            return false;
-        }
-
-        private void SaveToFile(string filePath)
-        {
-            var start = SourceCode.Document.ContentStart;
-            var end = SourceCode.Document.ContentEnd;
-            var range = new TextRange(start, end);
-            File.WriteAllText(filePath, range.Text);
-            currentFilePath = filePath;
         }
 
         private void CreateCanvasRectangles()
@@ -382,12 +229,192 @@ namespace PixelWallE
             }
         }
 
-        public void Print(string text)
+        #endregion
+
+        #region Preview
+
+        private bool? ShowCanvasSetupWindow()
+        {
+            NewCanvasSetupWindow newCanvasSetupWindow = new();
+
+            bool? result = newCanvasSetupWindow.ShowDialog();
+            if (result != true)
+            {
+                return result;
+            }
+            if (newCanvasSetupWindow.CanvasHeight <= 0 || newCanvasSetupWindow.CanvasWidth <= 0)
+            {
+                return false;
+            }
+            canvasHeight = newCanvasSetupWindow.CanvasHeight;
+            canvasWidth = newCanvasSetupWindow.CanvasWidth;
+
+            UpdateMainCanvasSize();
+            return result;
+        }
+
+        #endregion
+
+        #region Execution
+
+        private void Run()
+        {
+            Reset();
+            var lexer = new Lexer();
+            var parser = new Parser();
+            var context = new Context(handler);
+            var semanticErr = new SemanticErrVisitor(context);
+            var interpreter = new InterpreterVisitor(context);
+            var ast = GetAST(lexer, parser);
+
+            //try
+            //{
+                CheckSemanticErr(semanticErr, ast);
+                if (semanticErr.Exceptions.Count != 0)
+                    PrintProblems(semanticErr);
+                else
+                    RunInterpreter(interpreter, ast);
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
+            //}
+        }
+
+        private void Reset()
+        {
+            UpdateMainCanvasSize();
+            WallE.Reset();
+            MainCanvas.Children.Clear();
+            OutputTextBox.Document.Blocks.Clear();
+            ProblemsTextBox.Document.Blocks.Clear();
+            CreateCanvasRectangles();
+        }
+
+        private IStatement GetAST(Lexer lexer, Parser parser)
+        {
+            var code = ReadSourceCode();
+            var tokens = lexer.Scan(code);
+            var ast = parser.Parse(tokens);
+            return ast;
+        }
+
+        private string ReadSourceCode()
+        {
+            var start = SourceCode.Document.ContentStart;
+            var end = SourceCode.Document.ContentEnd;
+            var range = new TextRange(start, end);
+            return range.Text;
+        }
+
+        private void CheckSemanticErr(SemanticErrVisitor semanticErr, IStatement ast)
+            => ast.Accept(semanticErr);
+
+        private void RunInterpreter(InterpreterVisitor interpreter, IStatement ast)
+        {
+            Reset();
+            ast.Accept(interpreter);
+        }
+
+        #endregion
+
+        #region Terminal
+
+        public void PrintOutput(string text)
         {
             Paragraph paragraph = new();
             Run run = new(text);
             paragraph.Inlines.Add(run);
             OutputTextBox.Document.Blocks.Add(paragraph);
         }
+
+        private void PrintProblems(SemanticErrVisitor semanticErr)
+        {
+            foreach (var item in semanticErr.Exceptions)
+            {
+                string errMessage = item.PrintMessage();
+                Paragraph paragraph = new();
+                Run run = new(errMessage);
+                paragraph.Inlines.Add(run);
+                ProblemsTextBox.Document.Blocks.Add(paragraph);
+            }
+            ProblemsTextBox.ScrollToEnd();
+        }
+
+        #endregion
+
+        #region WallE
+
+        public void DrawWallE()
+        {
+            if (!MainCanvas.Children.Contains(WallE.Image))
+            {
+                MainCanvas.Children.Add(WallE.Image);
+            }
+            WallE.Image.Width = RECTSIZE;
+            WallE.Image.Height = RECTSIZE;
+            Canvas.SetLeft(WallE.Image, GetWallEPosX() * RECTSIZE);
+            Canvas.SetTop(WallE.Image, GetWallEPosY() * RECTSIZE);
+        }
+
+        public bool GetWallEVisibility() => WallE.IsVisible;
+
+        public int GetWallEPosX() => (int)WallE.PositionX!;
+
+        public int GetWallEPosY() => (int)WallE.PositionY!;
+
+        public SolidColorBrush GetWallEBrushColor() => WallE.Brush;
+
+        public void ChangeWallEBrushSize(int size) => WallE.Thickness = size;
+
+        public int GetWallEBrushThickness() => WallE.Thickness;
+
+        #endregion
+
+        #region File
+
+        private void SaveAs()
+        {
+            var saveFileDialog = new SaveFileDialog()
+            {
+                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
+                DefaultExt = ".pw",
+                AddExtension = true
+            };
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                SaveFile(saveFileDialog.FileName);
+            }
+        }
+
+        private bool OpenFile()
+        {
+            var openFileDialog = new OpenFileDialog()
+            {
+                Filter = "PixelWallE Files (*.pw)|*.pw|All Files (*.*)|*.*",
+                DefaultExt = ".pw",
+                AddExtension = true
+            };
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string text = File.ReadAllText(openFileDialog.FileName);
+                SourceCode.Document.Blocks.Clear();
+                SourceCode.Document.Blocks.Add(new Paragraph(new Run(text)));
+                currentFilePath = openFileDialog.FileName;
+                return true;
+            }
+            return false;
+        }
+
+        private void SaveFile(string filePath)
+        {
+            var start = SourceCode.Document.ContentStart;
+            var end = SourceCode.Document.ContentEnd;
+            var range = new TextRange(start, end);
+            File.WriteAllText(filePath, range.Text);
+            currentFilePath = filePath;
+        }
+        
+        #endregion
     }
 }

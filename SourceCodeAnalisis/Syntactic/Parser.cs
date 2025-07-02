@@ -181,7 +181,8 @@ public class Parser
             {
                 return ResetTokenIndex(startIndex, out parameters);
             }
-        };
+        }
+        ;
 
         return GetDefaultExpre([.. paramList], out parameters);
     }
@@ -194,37 +195,30 @@ public class Parser
         => TryGetAddExpre(tokens, out expression);
     private bool TryGetAddExpre(Token[] tokens, out IExpression? expre)
         => TryShiftBinaryExpre(tokens, TryGetProduct, out expre, [TokenType.Plus, TokenType.Minus]);
-    private bool TryGetProduct(Token[] tokens, out IExpression? expre)
-    {
-        bool r = false;
-        if ((r = TryShiftBinaryExpre(tokens, TryGetPow, out expre,
-                                     [TokenType.Dot, TokenType.Division, TokenType.Modulus]))
-            || (r = TryGetNegativeExpre(tokens, out expre)))
-        {
-            return r;
-        }
-        else
-        {
-            return r;
-        }
-    }
 
-    private bool TryGetNegativeExpre(Token[] tokens, out IExpression? expre)
-    {
-        int startIndex = tokenIndex;
-        if (TryMatchToken(tokens, TokenType.Minus)
-            && TryParseArithExpre(tokens, out IExpression? argument))
-        {
-            var node = new UnaryExpreNode(argument!, UnaryOperationType.Negative, GetCoord(tokens, startIndex));
-            expre = node;
-            return true;
-        }
-        expre = null;
-        return false;
-    }
+    private bool TryGetProduct(Token[] tokens, out IExpression? expre)
+        => TryShiftBinaryExpre(tokens, TryGetPow, out expre, [TokenType.Dot, TokenType.Division, TokenType.Modulus]);
 
     private bool TryGetPow(Token[] tokens, out IExpression? expre)
-        => TryShiftBinaryExpre(tokens, TryGetNum, out expre, [TokenType.Exponentiation]);
+        => TryShiftBinaryExpre(tokens, TryGetNegativeExpre, out expre, [TokenType.Exponentiation]);
+
+    private bool TryGetNegativeExpre(Token[] tokens, out IExpression? expre)
+        => TryShifttUnaryExpre(tokens, TryGetNum, out expre, [TokenType.Minus]);
+
+    //private bool TryGetNegativeExpre(Token[] tokens, out IExpression? expre)
+    //{
+    //    int startIndex = tokenIndex;
+    //    if (TryMatchToken(tokens, TokenType.Minus)
+    //        && TryParseArithExpre(tokens, out IExpression? argument))
+    //    {
+    //        var node = new UnaryExpreNode(argument!, UnaryOperationType.Negative, GetCoord(tokens, startIndex));
+    //        expre = node;
+    //        return true;
+    //    }
+    //    expre = null;
+    //    return false;
+    //}
+
     private bool TryGetNum(Token[] tokens, out IExpression? expre)
         => TryGetLiteral(tokens, LiteralType.Integer, TryParseArithExpre, out expre);
 
@@ -284,11 +278,21 @@ public class Parser
     private bool TryShifttUnaryExpre(Token[] tokens, TryGetFunc tryGetFunc, out IExpression? expre, TokenType[] tokenTypes)
     {
         int startIndex = tokenIndex;
+        if (!TryGetMatchToken(tokens, tokenTypes, out TokenType type))
+            return tryGetFunc(tokens, out expre);
+
+        var varcelona = type.ToUnaryType();
+
+        int count = 0;
+        while (TryMatchToken(tokens, type))
+            count++;
+
         if (!tryGetFunc(tokens, out IExpression? argument))
             return ResetTokenIndex(startIndex, out expre);
-        if (!TryReduceUnaryExpre(tokens, tryGetFunc, argument, out expre, tokenTypes))
-            return GetDefaultExpre(argument!, out expre);
-        return true;
+
+        for (; count >= 0; count--)
+            argument = new UnaryExpreNode(argument!, varcelona, GetCoord(tokens, startIndex + count));
+        return GetDefaultExpre(argument!, out expre);
     }
 
     private bool TryReduceBinaryExpre(Token[] tokens, TryGetFunc tryGetFunc, IExpression? left, out IExpression? expre, TokenType[] tokenTypes)
@@ -306,27 +310,6 @@ public class Parser
                 return GetDefaultExpre(result, out expre);
             return GetDefaultExpre(node, out expre);
         }
-        return ResetTokenIndex(startIndex, out expre);
-    }
-
-    private bool TryReduceUnaryExpre(Token[] tokens, TryGetFunc tryGetFunc, IExpression? argument, out IExpression? expre, TokenType[] tokenTypes)
-    {
-        int startIndex = tokenIndex;
-
-        if (!TryGetMatchToken(tokens, tokenTypes, out TokenType type))
-            return ResetTokenIndex(startIndex, out expre);
-
-        OperatorState operatorState = ShiftOrReduceOperators[type];
-        if (operatorState == OperatorState.Shift && TryShifttUnaryExpre(tokens, tryGetFunc, out argument, tokenTypes))
-            return GetDefaultExpre(new UnaryExpreNode(argument!, type.ToUnaryType(), GetCoord(tokens, startIndex)), out expre);
-        if (operatorState == OperatorState.Reduce && tryGetFunc(tokens, out argument))
-        {
-            IExpression node = new UnaryExpreNode(argument!, type.ToUnaryType(), GetCoord(tokens, startIndex));
-            if (TryReduceUnaryExpre(tokens, tryGetFunc, node, out IExpression? result, tokenTypes))
-                return GetDefaultExpre(result, out expre);
-            return GetDefaultExpre(node, out expre);
-        }
-
         return ResetTokenIndex(startIndex, out expre);
     }
 

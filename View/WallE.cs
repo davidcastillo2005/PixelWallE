@@ -7,17 +7,18 @@ namespace PixelWallE.View
     public class WallE
     {
         private int size = 1;
-
-        public SolidColorBrush DEFAULTBRUSH = Brushes.Black;
-        public const int DEFAULTTHICKNESS = 1;
+        private const int DEFAULTTHICKNESS = 1;
         public Image Image { get; } = new Image()
         {
             Source = new BitmapImage(new Uri("C:\\Users\\Audiovisual1\\Desktop\\285567672_130050706321124_2680004539479726113_n.jpg")),
         };
-        public bool isVisible { get; set; } = false;
+        public bool IsVisible { get; set; } = false;
         public int? PositionX { get; set; } = null;
         public int? PositionY { get; set; } = null;
-        public Brush Brush { get; set; }
+        public int R { get; set; } = 0;
+        public int G { get; set; } = 0;
+        public int B { get; set; } = 0;
+        public SolidColorBrush Brush { get; set;}
         public int Thickness
         {
             get { return size; }
@@ -29,8 +30,10 @@ namespace PixelWallE.View
 
         public WallE()
         {
+            Brush = new SolidColorBrush(Color.FromRgb((byte)R,
+                                                      (byte)G,
+                                                      (byte)B));
             Thickness = DEFAULTTHICKNESS;
-            Brush = DEFAULTBRUSH;
         }
 
         public void SetPos(int x, int y)
@@ -39,19 +42,29 @@ namespace PixelWallE.View
             PositionY = y;
         }
 
-        public void Hide() => isVisible = false;
+        public void Hide() => IsVisible = false;
 
-        public void Show() => isVisible = true;
+        public void Show() => IsVisible = true;
+
+        public void ColorRGB(int r, int g, int b)
+        {
+            R = r;
+            G = g;
+            B = b;
+            Brush = new SolidColorBrush(Color.FromRgb((byte)R,
+                                                      (byte)G,
+                                                      (byte)B));
+        }
+
+        public void ChangeBrush(SolidColorBrush brush) => Brush = brush;
 
         public void Reset()
         {
-            isVisible = false;
+            IsVisible = false;
             PositionX = null;
             PositionY = null;
             Thickness = DEFAULTTHICKNESS;
-            Brush = DEFAULTBRUSH;
+            Brush = Brushes.Black;
         }
-
-        public void ChangeBrush(Brush brush) => Brush = brush;
     }
 }
