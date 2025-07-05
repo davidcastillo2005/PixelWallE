@@ -4,24 +4,13 @@ using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
 namespace PixelWallE.SourceCodeAnalisis.Semantic.Visitors;
 
-public class SemanticErrVisitor(Context context) : IVisitor
+public class SemanticVisitor(Context context) : IVisitor
 {
-    /*
-    1- Variable
-    2- Action
-    3- Function
-    3- Parameters
-    4- Assign
-    5- Literal
-    6- Unary
-    7- Binary
-    8- Label
-    9- Goto
-    10- CodeBlock
-    */
     private readonly Context Context = context;
-    public List<Error> Exceptions { get; set; } = [];
 
+    public List<Problem> SemanticProblems { get; set; } = [];
+
+    #region Visit
     public void Visit(IStatement statement, Coord coord) => statement.Accept(this);
 
     public DynamicValue VariableVisit(string identifier, Coord coord)
@@ -30,7 +19,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
         {
             return CheckDynamicValue(coord, @return);
         }
-        AddException(coord, $"{identifier} not declared.");
+        SemanticProblems.Add(new Error(coord, $"'{identifier}' not declared."));
         return CheckDynamicValue(coord, @return);
     }
 
@@ -70,7 +59,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (argument.Value is int && op == UnaryOperationType.Not || argument.Value is bool && op == UnaryOperationType.Negative)
         {
-            AddException(coord, $"Unsupported {op} for {argument.Type}.");
+            SemanticProblems.Add(new Error(coord, $"Unsupported {op} for {argument.Type}."));
         }
         switch (op)
         {
@@ -79,7 +68,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case UnaryOperationType.Negative:
                 return CheckDynamicValue(coord, new DynamicValue(typeof(int)));
             default:
-                AddException(coord, $"Unsupported {op}");
+                SemanticProblems.Add(new Error(coord, $"Unsupported {op}"));
                 return CheckDynamicValue(coord, null);
         }
     }
@@ -88,11 +77,11 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (left.Type != right.Type)
         {
-            AddException(coord, $"Unsupported {op} for {left.Type} and {right.Type}");
+            SemanticProblems.Add(new Error(coord, $"Unsupported {op} for {left.Type} and {right.Type}"));
         }
         else if (right.Value is int rInt && (op == BinaryOperationType.Divide || op == BinaryOperationType.Modulus) && rInt == 0)
         {
-            AddException(coord, "Division by zero is not supported");
+            SemanticProblems.Add(new Error(coord, "Division by zero is not supported"));
         }
         switch (op)
         {
@@ -113,7 +102,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
             case BinaryOperationType.NotEqual:
                 return CheckDynamicValue(coord, new DynamicValue(typeof(bool)));
             default:
-                AddException(coord, $"Unsupported {op}");
+                SemanticProblems.Add(new Error(coord, $"Unsupported {op}"));
                 return CheckDynamicValue(coord, null);
         }
     }
@@ -121,7 +110,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
     public void LabelVisit(string identifier, Coord coord)
     {
         if (Context.Labels.ContainsKey(identifier))
-            AddException(coord, $"{identifier} already declared.");
+            SemanticProblems.Add(new Error(coord, $"{identifier} already declared."));
         else
         {
             Context.Labels[identifier] = coord.Row - 1;
@@ -132,7 +121,7 @@ public class SemanticErrVisitor(Context context) : IVisitor
     {
         if (!Context.Labels.ContainsKey(targetLabel))
         {
-            AddException(coord, $"{targetLabel} not declared.");
+            SemanticProblems.Add(new Error(coord, $"{targetLabel} not declared."));
         }
     }
 
@@ -146,6 +135,10 @@ public class SemanticErrVisitor(Context context) : IVisitor
         }
     }
 
+    #endregion
+
+    #region LabelSearch
+
     public void SearchLabel(IStatement[] lines)
     {
         foreach (var item in lines)
@@ -157,27 +150,20 @@ public class SemanticErrVisitor(Context context) : IVisitor
         }
     }
 
-    #region Tools
+    #endregion
 
     public DynamicValue CheckDynamicValue(Coord coord, DynamicValue? value)
     {
         if (value is null)
         {
-            AddException(coord, "Null value");
+            SemanticProblems.Add(new Error(coord, "Null value"));
             return new DynamicValue(null!);
         }
         var type = value.Type;
         if (type != typeof(int) && type != typeof(bool) && type != typeof(string))
         {
-            AddException(coord, "Unsupported type");
+            SemanticProblems.Add(new Error(coord, "Unsupported type"));
         }
         return value;
     }
-
-    public void AddException(Coord coord, string message)
-    {
-        Exceptions.Add(new Error(coord, message));
-    }
-
-    #endregion
 }

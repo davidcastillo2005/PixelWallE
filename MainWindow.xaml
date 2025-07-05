@@ -5,9 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PixelWallE"
         mc:Ignorable="d"
-        Title="MainWindow" 
+        Title="PixelWallE"
+        WindowStartupLocation="CenterScreen"
 		Height="450" 
-		Width="800">
+		Width="800"
+        ResizeMode="NoResize"
+        Loaded="Window_Loaded">
     <Grid>
         <GridSplitter
             Grid.Row="0"
@@ -164,19 +167,9 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition
                     Width="*"/>
-                <ColumnDefinition
-                    Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label
-                Grid.Row="0"
-                Grid.Column="0"
-                VerticalContentAlignment="Center"
-                HorizontalAlignment="Center"
-                HorizontalContentAlignment="Center"
-                Margin="3"
-                Content="Ready"/>
             <Button
-                Grid.Column="1"
+                Grid.Column="0"
                 Grid.Row="0"
                 Click="Button_Click"
                 VerticalContentAlignment="Center"
@@ -202,7 +195,8 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition
                 Width="auto"
-                MinWidth="150"/>
+                MinWidth="150"
+                MaxWidth="650"/>
             <ColumnDefinition
                 Width="auto"/>
             <ColumnDefinition

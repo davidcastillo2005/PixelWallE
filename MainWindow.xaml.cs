@@ -1,14 +1,14 @@
-﻿using System.IO;
+﻿using Microsoft.Win32;
+using PixelWallE.Interfaces;
+using PixelWallE.SourceCodeAnalisis.Semantic;
+using PixelWallE.View;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Microsoft.Win32;
-using PixelWallE.Interfaces;
-using PixelWallE.SourceCodeAnalisis.Semantic;
-using PixelWallE.View;
 
 namespace PixelWallE
 {
@@ -27,6 +27,7 @@ namespace PixelWallE
 
         public WallE WallE { get; set; } = new WallE();
         public Rectangle[,] Rectangles = new Rectangle[0, 0];
+        public (int r, int g, int b) BackgroundColor { get; set; } = (255, 255, 255);
 
         public MainWindow()
         {
@@ -36,8 +37,6 @@ namespace PixelWallE
             if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
             {
                 InitializeMainCanvas();
-                zoomFactor = GetDefaultZoom();
-                ApplyZoom();
             }
             else
             {
@@ -46,6 +45,14 @@ namespace PixelWallE
         }
 
         #region Events
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            zoomFactor = GetDefaultZoom();
+            ApplyZoom();
+            UpdateLastValidZoomFactor(zoomFactor);
+            ZoomTextBox.Text = (zoomFactor * 100).ToString() + "%";
+        }
 
         private void CopyMenuItem_Click(object sender, RoutedEventArgs e) => SourceCode.Copy();
 
@@ -71,7 +78,11 @@ namespace PixelWallE
         {
             bool? showCanvasSetupWindow = ShowCanvasSetupWindow();
             if (showCanvasSetupWindow is not null && (bool)showCanvasSetupWindow)
+            {
                 Reset();
+                zoomFactor = GetDefaultZoom();
+                ApplyZoom();
+            }
         }
 
         private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
@@ -200,7 +211,7 @@ namespace PixelWallE
         public void DrawPixel(int x, int y)
         {
             var rect = Rectangles[x, y];
-            var newBrush = GetWallEBrushColor();
+            var newBrush = WallE.Brush;
 
             if (!rect.Fill.Equals(newBrush))
             {
@@ -260,25 +271,38 @@ namespace PixelWallE
         private void Run()
         {
             Reset();
-            var lexer = new Lexer();
-            var parser = new Parser();
-            var context = new Context(handler);
-            var semanticErr = new SemanticErrVisitor(context);
-            var interpreter = new InterpreterVisitor(context);
-            var ast = GetAST(lexer, parser);
+            List<Problem> problems = [];
+            string sourceCode = ReadSourceCode();
 
-            //try
-            //{
-                CheckSemanticErr(semanticErr, ast);
-                if (semanticErr.Exceptions.Count != 0)
-                    PrintProblems(semanticErr);
-                else
-                    RunInterpreter(interpreter, ast);
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show(ex.Message + " : " + ex.Source + " : " + ex.StackTrace);
-            //}
+            var lexer = new Lexer();
+            Token[] tokens = lexer.Scan(sourceCode);
+            if (lexer.Problems.Count != 0)
+            {
+                problems.AddRange(lexer.Problems);
+            }
+
+            var parser = new Parser(tokens);
+            IStatement ast = parser.Parse();
+            if (parser.Problems.Count != 0)
+            {
+                problems.AddRange(parser.Problems);
+            }
+
+            var context = new Context(handler);
+            var semanticDectector = new SemanticVisitor(context);
+            ast.Accept(semanticDectector);
+            if (semanticDectector.SemanticProblems.Count != 0)
+            {
+                problems.AddRange(semanticDectector.SemanticProblems);
+            }
+            else
+            {
+                Reset();
+
+                var interpreter = new InterpreterVisitor(context);
+                ast.Accept(interpreter);
+            }
+            PrintProblems(problems);
         }
 
         private void Reset()
@@ -291,29 +315,12 @@ namespace PixelWallE
             CreateCanvasRectangles();
         }
 
-        private IStatement GetAST(Lexer lexer, Parser parser)
-        {
-            var code = ReadSourceCode();
-            var tokens = lexer.Scan(code);
-            var ast = parser.Parse(tokens);
-            return ast;
-        }
-
         private string ReadSourceCode()
         {
             var start = SourceCode.Document.ContentStart;
             var end = SourceCode.Document.ContentEnd;
             var range = new TextRange(start, end);
             return range.Text;
-        }
-
-        private void CheckSemanticErr(SemanticErrVisitor semanticErr, IStatement ast)
-            => ast.Accept(semanticErr);
-
-        private void RunInterpreter(InterpreterVisitor interpreter, IStatement ast)
-        {
-            Reset();
-            ast.Accept(interpreter);
         }
 
         #endregion
@@ -328,9 +335,9 @@ namespace PixelWallE
             OutputTextBox.Document.Blocks.Add(paragraph);
         }
 
-        private void PrintProblems(SemanticErrVisitor semanticErr)
+        private void PrintProblems(List<Problem> Errors)
         {
-            foreach (var item in semanticErr.Exceptions)
+            foreach (Problem item in Errors)
             {
                 string errMessage = item.PrintMessage();
                 Paragraph paragraph = new();
@@ -357,17 +364,9 @@ namespace PixelWallE
             Canvas.SetTop(WallE.Image, GetWallEPosY() * RECTSIZE);
         }
 
-        public bool GetWallEVisibility() => WallE.IsVisible;
-
         public int GetWallEPosX() => (int)WallE.PositionX!;
 
         public int GetWallEPosY() => (int)WallE.PositionY!;
-
-        public SolidColorBrush GetWallEBrushColor() => WallE.Brush;
-
-        public void ChangeWallEBrushSize(int size) => WallE.Thickness = size;
-
-        public int GetWallEBrushThickness() => WallE.Thickness;
 
         #endregion
 
@@ -414,7 +413,7 @@ namespace PixelWallE
             File.WriteAllText(filePath, range.Text);
             currentFilePath = filePath;
         }
-        
+
         #endregion
     }
 }

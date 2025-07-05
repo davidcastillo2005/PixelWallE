@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PixelWallE"
         mc:Ignorable="d" 
-        Title="NewCanvasSetupWindow" 
+        Title="New Canvas"
+        WindowStartupLocation="CenterScreen"
 		Height="225" 
 		Width="400"
 		ResizeMode="NoResize">
@@ -107,8 +108,6 @@
         <Grid.RowDefinitions>
             <RowDefinition
                 Height="*"/>
-            <RowDefinition
-                Height="auto"/>
             <RowDefinition
                 Height="auto"/>
             <RowDefinition

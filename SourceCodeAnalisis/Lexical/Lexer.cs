@@ -1,6 +1,4 @@
-﻿using PixelWallE.Global;
-
-namespace PixelWallE.SourceCodeAnalisis.Lexical
+﻿namespace PixelWallE.SourceCodeAnalisis.Lexical
 {
     public class Lexer
     {
@@ -8,6 +6,7 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
         private int currentRow = 1;
         private int currentColumn = 1;
         private List<Token> tokens = [];
+        public List<Problem> Problems = [];
         private delegate bool IsIntOrId(string source, int startIndex);
 
         private readonly Dictionary<string, TokenType> keyword = new Dictionary<string, TokenType>
@@ -17,20 +16,27 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
         {"true", TokenType.Boolean},
         };
 
-        public Token[] Scan(string input)
+        public Token[] Scan(string source)
         {
             bool ReadChar;
             do
             {
-                if (!(ReadChar = ReadWhiteSpace(input))
-                    && (ReadChar = TryGetNewLineToken(input, out Token? token)
-                    || TryGetStrToken(input, out token)
-                    || TryGetIntToken(input, out token)
-                    || TryGetSymToken(input, out token)
-                    || TryGetIdentifier(input, out token)))
+                if (!(ReadChar = ReadWhiteSpace(source))
+                    && (ReadChar = TryGetNewLineToken(source, out Token? token)
+                    || TryGetStrToken(source, out token)
+                    || TryGetIntToken(source, out token)
+                    || TryGetSymToken(source, out token)
+                    || TryGetIdentifier(source, out token)))
                 {
                     tokens.Add(token!);
                     currentColumn += token!.Value.Length;
+                }
+                else if (!ReadChar && sourceIndex < source.Length)
+                {
+                    InvalidChar(source);
+                    ReadChar = true;
+                    sourceIndex++;
+                    currentColumn++;
                 }
             } while (ReadChar);
 
@@ -38,10 +44,9 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
             return [.. tokens];
         }
 
-        private int GetLength()
-        {
-            return tokens.Count;
-        }
+        private void InvalidChar(string source)
+            => Problems.Add(new Warning(new Coord(currentRow, currentColumn, 1),
+                                           $"Invalid character '{source[sourceIndex]}'."));
 
         private bool TryGetNewLineToken(string input, out Token? token)
         {
@@ -67,7 +72,7 @@ namespace PixelWallE.SourceCodeAnalisis.Lexical
             return space;
         }
 
-        #region Symbols
+        #region Puntuactions
 
         private bool TryGetSymToken(string source, out Token? token)
         {

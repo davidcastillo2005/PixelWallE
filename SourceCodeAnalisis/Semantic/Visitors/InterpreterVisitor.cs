@@ -1,7 +1,5 @@
-﻿using PixelWallE.Global;
-using PixelWallE.Global.AST;
+﻿using PixelWallE.Global.AST;
 using PixelWallE.Interfaces;
-using PixelWallE.SourceCodeAnalisis.Semantic;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
 namespace PixelWallE.SourceCodeAnalisis.Semantic.Visitors;

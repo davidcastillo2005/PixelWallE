@@ -1,4 +1,3 @@
-using PixelWallE.Global;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
 namespace PixelWallE.Interfaces;

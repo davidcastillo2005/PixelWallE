@@ -1,5 +1,4 @@
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
-using TokenType = PixelWallE.Global.TokenType;
 
 namespace PixelWallE.SourceCodeAnalisis.Syntactic.Extensions;
 
