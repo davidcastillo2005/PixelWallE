@@ -1,6 +1,6 @@
 using PixelWallE.Interfaces;
 
-namespace PixelWallE.Global.AST;
+namespace PixelWallE.Data.AST;
 
 public abstract class Method(string identifier, IExpression[] arguments, Coord coord)
 {

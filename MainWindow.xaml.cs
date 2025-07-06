@@ -17,16 +17,16 @@ namespace PixelWallE
     /// </summary>
     public partial class MainWindow : Window
     {
-        private int canvasHeight;
-        private int canvasWidth;
         private const double RECTSIZE = 1;
         private double zoomFactor = 1;
         private double lastValidZoomFactor;
         private readonly Handler handler;
         private string? currentFilePath = null;
 
-        public WallE WallE { get; set; } = new WallE();
+        public int CanvasHeight { get; set; }
+        public int CanvasWidth { get; set; }
         public Rectangle[,] Rectangles = new Rectangle[0, 0];
+        public WallE WallE { get; set; } = new WallE();
         public (int r, int g, int b) BackgroundColor { get; set; } = (255, 255, 255);
 
         public MainWindow()
@@ -161,14 +161,14 @@ namespace PixelWallE
                     availableHeight = MainScrollViewer.ActualHeight;
                 }
 
-                if (canvasWidth == 0
-                    || canvasHeight == 0
+                if (CanvasWidth == 0
+                    || CanvasHeight == 0
                     || availableWidth == 0
                     || availableHeight == 0)
                     return 1;
 
-                double scaleX = availableWidth / canvasWidth;
-                double scaleY = availableHeight / canvasHeight;
+                double scaleX = availableWidth / CanvasWidth;
+                double scaleY = availableHeight / CanvasHeight;
                 return Math.Min(scaleX, scaleY);
             }
             return 1;
@@ -180,27 +180,22 @@ namespace PixelWallE
 
         public int GetCanvasSize()
         {
-            if (canvasHeight == canvasWidth)
+            if (CanvasHeight == CanvasWidth)
             {
-                return canvasWidth;
+                return CanvasWidth;
             }
             throw new Exception();
         }
 
-        public int GetCanvasWidth() => canvasWidth;
-
-        public int GetCanvasHeight() => canvasHeight;
-
-
         private void UpdateMainCanvasSize()
         {
-            MainCanvas.Height = canvasHeight;
-            MainCanvas.Width = canvasWidth;
+            MainCanvas.Height = CanvasHeight;
+            MainCanvas.Width = CanvasWidth;
         }
 
         private void InitializeMainCanvas()
         {
-            if (canvasHeight == 0 || canvasWidth == 0)
+            if (CanvasHeight == 0 || CanvasWidth == 0)
             {
                 return;
             }
@@ -208,23 +203,54 @@ namespace PixelWallE
             MainCanvas.UpdateLayout();
         }
 
-        public void DrawPixel(int x, int y)
+        public void DrawPixel(int x0, int y0, int size)
         {
-            var rect = Rectangles[x, y];
-            var newBrush = WallE.Brush;
-
-            if (!rect.Fill.Equals(newBrush))
+            int offset = (size - 1) / 2;
+            if (offset < 0)
+                offset = -offset;
+            if (offset < 1)
             {
-                rect.Fill = newBrush;
+                if (!IsInsideBounds(x0, y0))
+                {
+                    return;
+                }
+                var rect = Rectangles[x0, y0];
+                if (!rect.Fill.Equals(WallE.Brush))
+                {
+                    rect.Fill = WallE.Brush;
+                }
+            }
+            else
+            {
+                for (int i = -offset; i <= offset; i++)
+                {
+                    for (int j = -offset; j <= offset; j++)
+                    {
+                        var X = x0 + i;
+                        var Y = y0 + j;
+                        if (!IsInsideBounds(X, Y))
+                        {
+                            continue;
+                        }
+                        var rect = Rectangles[X, Y];
+                        if (!rect.Fill.Equals(WallE.Brush))
+                        {
+                            rect.Fill = WallE.Brush;
+                        }
+                    }
+                }
             }
         }
 
+        public bool IsInsideBounds(int x, int y) 
+            => x > -1 && y > -1 && x < CanvasWidth && y < CanvasHeight;
+
         private void CreateCanvasRectangles()
         {
-            Rectangles = new Rectangle[canvasWidth, canvasHeight];
-            for (int i = 0; i < canvasWidth; i++)
+            Rectangles = new Rectangle[CanvasWidth, CanvasHeight];
+            for (int i = 0; i < CanvasWidth; i++)
             {
-                for (int j = 0; j < canvasHeight; j++)
+                for (int j = 0; j < CanvasHeight; j++)
                 {
                     var rect = new Rectangle
                     {
@@ -257,8 +283,8 @@ namespace PixelWallE
             {
                 return false;
             }
-            canvasHeight = newCanvasSetupWindow.CanvasHeight;
-            canvasWidth = newCanvasSetupWindow.CanvasWidth;
+            CanvasHeight = newCanvasSetupWindow.CanvasHeight;
+            CanvasWidth = newCanvasSetupWindow.CanvasWidth;
 
             UpdateMainCanvasSize();
             return result;
@@ -274,8 +300,8 @@ namespace PixelWallE
             List<Problem> problems = [];
             string sourceCode = ReadSourceCode();
 
-            var lexer = new Lexer();
-            Token[] tokens = lexer.Scan(sourceCode);
+            var lexer = new Lexer(sourceCode);
+            Token[] tokens = lexer.Scan();
             if (lexer.Problems.Count != 0)
             {
                 problems.AddRange(lexer.Problems);
@@ -298,11 +324,28 @@ namespace PixelWallE
             else
             {
                 Reset();
-
                 var interpreter = new InterpreterVisitor(context);
                 ast.Accept(interpreter);
             }
+            Sort(problems);
             PrintProblems(problems);
+        }
+
+        private void Sort(List<Problem> problems)
+        {
+            if (problems.Count == 0)
+            {
+                return;
+            }
+            for (int i = 1; i < problems.Count; i++)
+            {
+                if (problems[i].Row < problems[i - 1].Row || problems[i].Column < problems[i - 1].Column)
+                {
+                    var temp = problems[i];
+                    problems[i] = problems[i - 1];
+                    problems[i - 1] = temp;
+                }
+            }
         }
 
         private void Reset()

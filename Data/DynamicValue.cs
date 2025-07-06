@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace PixelWallE.Global;
+namespace PixelWallE.Data;
 
 public class DynamicValue : IParsable<DynamicValue>
 {

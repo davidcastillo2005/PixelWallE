@@ -1,6 +1,6 @@
 using PixelWallE.Interfaces;
 
-namespace PixelWallE.Global.AST;
+namespace PixelWallE.Data.AST;
 
 public class AssignStatement(string identifier, IExpression value, Coord coord) : IStatement
 {

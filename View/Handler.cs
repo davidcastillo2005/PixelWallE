@@ -6,7 +6,7 @@ namespace PixelWallE.View
     {
         public MainWindow Window { get; } = window;
 
-        private Dictionary<string, SolidColorBrush> stringToBrush = new()
+        private readonly Dictionary<string, SolidColorBrush> stringToBrush = new()
         {
             {"White", Brushes.White},
             {"Black", Brushes.Black },
@@ -46,13 +46,13 @@ namespace PixelWallE.View
         private int GetActualY() => Window.GetWallEPosY()!;
 
         private int GetCanvasSize()
-            => Window.GetCanvasWidth() == Window.GetCanvasWidth()
-            ? Window.GetCanvasSize()
+            => Window.CanvasHeight == Window.CanvasWidth
+            ? Window.CanvasHeight
             : throw new Exception();
 
-        private int GetCanvasWidth() => Window.GetCanvasWidth();
+        private int GetCanvasWidth() => Window.CanvasWidth;
 
-        private int GetCanvasHeight() => Window.GetCanvasHeight();
+        private int GetCanvasHeight() => Window.CanvasHeight;
 
         private int GetBrushSize() => Window.WallE.Thickness;
 
@@ -88,7 +88,7 @@ namespace PixelWallE.View
         {
             var x0 = GetActualX();
             var y0 = GetActualY();
-            if (!IsInsideBounds(x0 + v2, y0 + v3))
+            if (!Window.IsInsideBounds(x0 + v2, y0 + v3))
             {
                 return 0;
             }
@@ -260,13 +260,13 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
             }
 
-            if (!IsInsideBounds(x1, y1))
+            if (!Window.IsInsideBounds(x1, y1))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x1}, {y1}> position"));
                 return true;
@@ -284,7 +284,7 @@ namespace PixelWallE.View
 
         private bool GetCanvasSizeErr(SemanticVisitor visitor, Coord coord)
         {
-            if (Window.GetCanvasWidth() == Window.GetCanvasWidth())
+            if (Window.CanvasHeight == Window.CanvasWidth)
             {
                 return false;
             }
@@ -342,7 +342,7 @@ namespace PixelWallE.View
                     Draw();
                     break;
                 case "Plot" or "plot":
-                    Plot(@params[0].ToInt(), @params[1].ToInt());
+                    Window.DrawPixel(@params[0].ToInt(), @params[1].ToInt(), Window.WallE.Thickness);
                     break;
                 case "Move" or "move":
                     Move(@params[0].ToInt(), @params[1].ToInt());
@@ -375,18 +375,13 @@ namespace PixelWallE.View
                     break;
                 case "PlotRectangle" or "plotrectangle":
                     PlotRectangle(@params[0].ToInt(), @params[1].ToInt(), @params[2].ToInt(), @params[3].ToInt());
-                    Move(@params[0].ToInt(), @params[1].ToInt());
                     break;
                 case "Fill" or "fill":
                     var x0 = GetActualX();
                     var y0 = GetActualY();
-                    var currentSize = GetBrushSize();
                     var color = GetCurrentColor(x0, y0);
-                    Size(1);
-                    Plot(x0, y0);
-                    Fill(color);
+                    Fill(x0, y0, color);
                     Move(x0, y0);
-                    Size(currentSize);
                     break;
                 case "Print" or "print":
                     TryParse(@params[0], out string? printedParam);
@@ -415,7 +410,7 @@ namespace PixelWallE.View
 
         private void ColorRGB(int r, int g, int b)
         {
-            Window.WallE.ColorRGB(r, g, b);
+            Window.WallE.ChangeBrushFromRGB(r, g, b);
         }
 
         private void Spawn(int x, int y)
@@ -429,39 +424,7 @@ namespace PixelWallE.View
         {
             var x0 = GetActualX();
             var y0 = GetActualY();
-            int offset = (Window.WallE.Thickness - 1) / 2;
-            if (offset < 0)
-                offset = -offset;
-            if (offset < 1)
-            {
-                if (!IsInsideBounds(x0, y0))
-                {
-                    return;
-                }
-                Window.DrawPixel(x0, y0);
-            }
-            else
-            {
-                for (int i = -offset; i <= offset; i++)
-                {
-                    for (int j = -offset; j <= offset; j++)
-                    {
-                        var X = x0 + i;
-                        var Y = y0 + j;
-                        if (!IsInsideBounds(X, Y))
-                        {
-                            continue;
-                        }
-                        Window.DrawPixel(X, Y);
-                    }
-                }
-            }
-        }
-
-        private void Plot(int x, int y)
-        {
-            Move(x, y);
-            Draw();
+            Window.DrawPixel(x0, y0, Window.WallE.Thickness);
         }
 
         private void Move(int x, int y)
@@ -481,6 +444,7 @@ namespace PixelWallE.View
             var X = x0 + (x1 * d);
             var Y = y0 + (y1 * d);
             PlotLine(x0, y0, X, Y);
+            Move(X, Y);
         }
 
         private void PlotLine(int x0, int y0, int x1, int y1)
@@ -495,7 +459,7 @@ namespace PixelWallE.View
                 var stepY = (double)dy / step;
                 for (int i = 0; i < step + 1; i++)
                 {
-                    Plot((int)Math.Round(x0 + (i * stepX)), (int)Math.Round(y0 + (i * stepY)));
+                    Window.DrawPixel((int)Math.Round(x0 + (i * stepX)), (int)Math.Round(y0 + (i * stepY)), Window.WallE.Thickness);
                 }
             }
         }
@@ -515,23 +479,23 @@ namespace PixelWallE.View
 
             for (int i = y0; i < y0 + height; i++)
             {
-                Plot(x0 + width - 1, i);
-                Plot(x0 - width + 1, i);
+                Window.DrawPixel(x0 + width - 1, i, 1);
+                Window.DrawPixel(x0 - width + 1, i, 1);
             }
             for (int i = y0; i > y0 - height; i--)
             {
-                Plot(x0 + width - 1, i);
-                Plot(x0 - width + 1, i);
+                Window.DrawPixel(x0 + width - 1, i, 1);
+                Window.DrawPixel(x0 - width + 1, i, 1);
             }
             for (int i = x0; i < x0 + width; i++)
             {
-                Plot(i, y0 + height - 1);
-                Plot(i, y0 - height + 1);
+                Window.DrawPixel(i, y0 + height - 1, 1);
+                Window.DrawPixel(i, y0 - height + 1, 1);
             }
             for (int i = x0; i > x0 - width; i--)
             {
-                Plot(i, y0 + height - 1);
-                Plot(i, y0 - height + 1);
+                Window.DrawPixel(i, y0 + height - 1, 1);
+                Window.DrawPixel(i, y0 - height + 1, 1);
             }
         }
 
@@ -556,36 +520,57 @@ namespace PixelWallE.View
                     Y += 1;
                 }
 
-                Plot(x0 + X, y0 + Y);
-                Plot(x0 - X, y0 + Y);
-                Plot(x0 + X, y0 - Y);
-                Plot(x0 - X, y0 - Y);
-                Plot(x0 + Y, y0 + X);
-                Plot(x0 - Y, y0 + X);
-                Plot(x0 + Y, y0 - X);
-                Plot(x0 - Y, y0 - X);
+                Window.DrawPixel(x0 + X, y0 + Y, 1);
+                Window.DrawPixel(x0 - X, y0 + Y, 1);
+                Window.DrawPixel(x0 + X, y0 - Y, 1);
+                Window.DrawPixel(x0 - X, y0 - Y, 1);
+                Window.DrawPixel(x0 + Y, y0 + X, 1);
+                Window.DrawPixel(x0 - Y, y0 + X, 1);
+                Window.DrawPixel(x0 + Y, y0 - X, 1);
+                Window.DrawPixel(x0 - Y, y0 - X, 1);
                 X += 1;
             }
             Move(x0, y0);
         }
 
-        private void Fill(SolidColorBrush brush)
+        private void Fill(int x0, int y0, SolidColorBrush brush)
         {
-            var x0 = GetActualX();
-            var y0 = GetActualY();
-            (int x, int y)[] vArr = [(1, 0), (0, 1), (-1, 0), (0, -1)];
-            foreach (var (x, y) in vArr)
+            Queue<(int x, int y)> queue = new();
+
+            var visited = new HashSet<(int x, int y)>();
+
+            queue.Enqueue((x0, y0));
+            visited.Add((x0, y0));
+
+            while (queue.Count > 0)
             {
-                var X = x0 + x;
-                var Y = y0 + y;
-                var maxX = GetCanvasWidth();
-                var maxY = GetCanvasHeight();
-                if (!IsInsideBounds(X, Y) || brush != GetCurrentColor(X, Y))
+                (int x, int y) currentPos = queue.Dequeue();
+
+                Window.DrawPixel(currentPos.x, currentPos.y, 1);
+
+                foreach (var neighbor in GetAdjacentsPos(brush, currentPos))
                 {
-                    continue;
+                    if (!visited.Contains(neighbor))
+                    {
+                        visited.Add(neighbor);
+                        queue.Enqueue(neighbor);
+                    }
                 }
-                Plot(X, Y);
-                Fill(brush);
+            }
+        }
+
+        private IEnumerable<(int x, int y)> GetAdjacentsPos(SolidColorBrush brush, (int x, int y) currentPos)
+        {
+            (int x, int y)[] vArr = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+
+            foreach ((int x, int y) dir in vArr)
+            {
+                var X = currentPos.x + dir.x;
+                var Y = currentPos.y + dir.y;
+                if (Window.IsInsideBounds(X, Y) && GetCurrentColor(X, Y) == brush)
+                {
+                    yield return (X, Y);
+                }
             }
         }
 
@@ -692,7 +677,7 @@ namespace PixelWallE.View
                                   @params[4].ToInt(),
                                   visitor,
                                   coord);
-                case "PlotRectangle" or  "plotrectangle":
+                case "PlotRectangle" or "plotrectangle":
                     AddMissArgErr(identifier, @params, visitor, coord, 4, out b);
                     if (b) return b;
 
@@ -758,7 +743,7 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
@@ -795,7 +780,7 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(x1, y1))
+            if (!Window.IsInsideBounds(x1, y1))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x1}, {y1}> position"));
                 return true;
@@ -818,7 +803,7 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(x1, y1))
+            if (!Window.IsInsideBounds(x1, y1))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x1}, {y1}> position"));
                 return true;
@@ -849,7 +834,7 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(X, Y))
+            if (!Window.IsInsideBounds(X, Y))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{X}, {Y}> position"));
                 return true;
@@ -860,13 +845,13 @@ namespace PixelWallE.View
 
         private bool PlotLineErr(int x0, int y0, int x1, int y1, SemanticVisitor visitor, Coord coord)
         {
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
             }
 
-            if (!IsInsideBounds(x1, y1))
+            if (!Window.IsInsideBounds(x1, y1))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x1}, {y1}> position"));
                 return true;
@@ -889,7 +874,7 @@ namespace PixelWallE.View
             }
             var x0 = GetActualX() + dirX;
             var y0 = GetActualY() + dirY;
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
@@ -905,7 +890,7 @@ namespace PixelWallE.View
                 return true;
             }
 
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
@@ -928,7 +913,7 @@ namespace PixelWallE.View
             }
             var x0 = GetActualX() + (dirX * distance);
             var y0 = GetActualX() + (dirY * distance);
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
@@ -939,7 +924,7 @@ namespace PixelWallE.View
 
         private bool PlotRectangleErr(int x0, int y0, int width, int height, SemanticVisitor visitor, Coord coord)
         {
-            if (!IsInsideBounds(x0, y0))
+            if (!Window.IsInsideBounds(x0, y0))
             {
                 visitor.SemanticProblems.Add(new Error(coord, $"Outside bounds <{x0}, {y0}> position"));
                 return true;
@@ -986,10 +971,8 @@ namespace PixelWallE.View
         private bool IsValidDirection(int dirX) => dirX == 1 || dirX == -1 || dirX == 0;
 
         private SolidColorBrush GetCurrentColor(int x, int y)
-            => (SolidColorBrush)(IsInsideBounds(x, y) ? Window.Rectangles[x, y].Fill : throw new Exception());
+            => (SolidColorBrush)(Window.IsInsideBounds(x, y) ? Window.Rectangles[x, y].Fill : throw new Exception());
 
-        private bool IsInsideBounds(int X, int Y)
-            => X > -1 && Y > -1 && X < GetCanvasWidth() && Y < GetCanvasHeight();
 
         private bool TryParse(DynamicValue dynaValue, out string? printedParam)
         {

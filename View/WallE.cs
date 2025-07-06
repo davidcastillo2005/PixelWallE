@@ -46,7 +46,7 @@ namespace PixelWallE.View
 
         public void Show() => IsVisible = true;
 
-        public void ColorRGB(int r, int g, int b)
+        public void ChangeBrushFromRGB(int r, int g, int b)
         {
             R = r;
             G = g;

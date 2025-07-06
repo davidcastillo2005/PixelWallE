@@ -1,10 +1,10 @@
-﻿global using Token = PixelWallE.Global.Token;
-global using TokenType = PixelWallE.Global.TokenType;
-global using DynamicValue = PixelWallE.Global.DynamicValue;
-global using Problem = PixelWallE.Global.Problem;
-global using Warning = PixelWallE.Global.Warning;
-global using Error = PixelWallE.Global.Error;
-global using Coord = PixelWallE.Global.Coord;
+﻿global using Token = PixelWallE.Data.Token;
+global using TokenType = PixelWallE.Data.TokenType;
+global using DynamicValue = PixelWallE.Data.DynamicValue;
+global using Problem = PixelWallE.Data.Problem;
+global using Warning = PixelWallE.Data.Warning;
+global using Error = PixelWallE.Data.Error;
+global using Coord = PixelWallE.Data.Coord;
 global using Lexer = PixelWallE.SourceCodeAnalisis.Lexical.Lexer;
 global using Parser = PixelWallE.SourceCodeAnalisis.Syntactic.Parser;
 global using SemanticVisitor = PixelWallE.SourceCodeAnalisis.Semantic.Visitors.SemanticVisitor;

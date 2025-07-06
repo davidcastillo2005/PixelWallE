@@ -1,14 +1,31 @@
-﻿namespace PixelWallE.Global;
+﻿namespace PixelWallE.Data;
 
-public class Token(TokenType type, string value, int row, int column)
+public class Token
 {
-    public TokenType Type { get; } = type;
-    public string Value { get; set; } = value;
-    public Coord Coords { get; set; } = new Coord(row, column, value.Length);
+    public TokenType Type { get; }
+    public string Value { get; set; }
+    public Coord Coords { get; set; }
+
+    public Token(TokenType type, string value, int row, int column)
+    {
+        Type = type;
+        Value = value;
+        Coords = new Coord(row, column, GetLength());
+    }
 
     public override string ToString()
     {
         return $"{Coords} : {Type} : {Value}";
+    }
+
+    private int GetLength()
+    {
+        int length = 0 ;
+        if (Type == TokenType.String)
+        {
+            length += 2;
+        }
+        return Value.Length + length;
     }
 }
 

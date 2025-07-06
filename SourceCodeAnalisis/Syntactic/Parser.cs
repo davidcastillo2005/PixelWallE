@@ -1,16 +1,17 @@
-using PixelWallE.Global.AST;
+using PixelWallE.Data.AST;
 using PixelWallE.Interfaces;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Extensions;
+using Action = PixelWallE.Data.AST.Action;
 
 namespace PixelWallE.SourceCodeAnalisis.Syntactic;
 
 public enum OperatorState { Shift, Reduce }
 
-public class Parser
+public class Parser(Token[] tokens)
 {
     private int tokenIndex;
-    private Token[] tokens;
+    private readonly Token[] tokens = tokens;
     private readonly Dictionary<TokenType, OperatorState> ShiftOrReduceOperators = new()
     {
         { TokenType.Plus, OperatorState.Shift }, { TokenType.Minus, OperatorState.Reduce },
@@ -24,11 +25,6 @@ public class Parser
 
     public List<IStatement> Lines { get; private set; } = [];
     public List<Problem> Problems { get; private set; } = [];
-
-    public Parser(Token[] tokens)
-    {
-        this.tokens = tokens;
-    }
 
     public IStatement Parse()
         => TryGetCodeBlock(out IStatement? expre) ? expre! : throw new Exception();
@@ -47,8 +43,12 @@ public class Parser
                 continue;
             }
             ReadLine = TryMatchToken(TokenType.NewLine);
-        } while (ReadLine);
 
+        } while (ReadLine);
+        if (!TryMatchToken(TokenType.EOF))
+        {
+            Problems.Add(new Error(GetCoord(), "No parsable line."));
+        }
         CodeBlock node = new([.. Lines]);
         return GetDefaultExpre(node, out expre);
     }
@@ -80,6 +80,18 @@ public class Parser
             return GetDefaultExpre(@goto, out lineExpre);
         }
         return ResetTokenIndex(startIndex, out lineExpre);
+    }
+
+    private Coord GetCoord()
+    {
+        int startIndex = tokenIndex;
+        int length = 0;
+        while (!TryMatchToken(TokenType.NewLine) && !TryMatchToken(TokenType.EOF)) 
+        {
+            length += tokens[tokenIndex].Coords.Length;
+            tokenIndex++;
+        }
+        return new Coord(Lines.Count + 1, 1, length);
     }
 
     private Coord GetCoord(int startIndex)
@@ -141,7 +153,7 @@ public class Parser
         string identifier = tokens[tokenIndex].Value;
         if (TryParseMethod(out IExpression[]? parameters))
         {
-            statement = new Global.AST.Action(identifier, parameters!, GetCoord(startIndex));
+            statement = new Action(identifier, parameters!, GetCoord(startIndex));
             return true;
         }
         return ResetTokenIndex(startIndex, out statement);

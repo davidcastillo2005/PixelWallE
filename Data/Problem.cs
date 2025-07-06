@@ -1,4 +1,4 @@
-namespace PixelWallE.Global;
+namespace PixelWallE.Data;
 
 public class Problem(Coord coord, string message) : Exception(message)
 {

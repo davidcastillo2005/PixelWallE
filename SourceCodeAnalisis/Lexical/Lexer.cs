@@ -1,39 +1,41 @@
 ﻿namespace PixelWallE.SourceCodeAnalisis.Lexical
 {
-    public class Lexer
+    public class Lexer(string sourceCode)
     {
         private int sourceIndex = 0;
         private int currentRow = 1;
         private int currentColumn = 1;
-        private List<Token> tokens = [];
+        private readonly List<Token> tokens = [];
         public List<Problem> Problems = [];
-        private delegate bool IsIntOrId(string source, int startIndex);
-
+        private delegate bool IsIntOrId(int startIndex);
+        private readonly string sourceCode = sourceCode;
         private readonly Dictionary<string, TokenType> keyword = new Dictionary<string, TokenType>
         {
-        {"GoTo", TokenType.GoTo},
-        {"false", TokenType.Boolean},
-        {"true", TokenType.Boolean},
+            {"Goto", TokenType.GoTo},
+            {"goto", TokenType.GoTo},
+            {"GoTo", TokenType.GoTo},
+            {"false", TokenType.Boolean},
+            {"true", TokenType.Boolean},
         };
 
-        public Token[] Scan(string source)
+        public Token[] Scan()
         {
             bool ReadChar;
             do
             {
-                if (!(ReadChar = ReadWhiteSpace(source))
-                    && (ReadChar = TryGetNewLineToken(source, out Token? token)
-                    || TryGetStrToken(source, out token)
-                    || TryGetIntToken(source, out token)
-                    || TryGetSymToken(source, out token)
-                    || TryGetIdentifier(source, out token)))
+                if (!(ReadChar = ReadWhiteSpace())
+                    && (ReadChar = TryGetNewLineToken(out Token? token)
+                    || TryGetStrToken(out token)
+                    || TryGetIntToken(out token)
+                    || TryGetSymToken(out token)
+                    || TryGetIdentifier(out token)))
                 {
                     tokens.Add(token!);
                     currentColumn += token!.Value.Length;
                 }
-                else if (!ReadChar && sourceIndex < source.Length)
+                else if (!ReadChar && sourceIndex < sourceCode.Length)
                 {
-                    InvalidChar(source);
+                    InvalidChar();
                     ReadChar = true;
                     sourceIndex++;
                     currentColumn++;
@@ -44,14 +46,14 @@
             return [.. tokens];
         }
 
-        private void InvalidChar(string source)
+        private void InvalidChar()
             => Problems.Add(new Warning(new Coord(currentRow, currentColumn, 1),
-                                           $"Invalid character '{source[sourceIndex]}'."));
+                                           $"Invalid character '{sourceCode[sourceIndex]}'."));
 
-        private bool TryGetNewLineToken(string input, out Token? token)
+        private bool TryGetNewLineToken(out Token? token)
         {
             int startIndex = sourceIndex;
-            if (TryMatchPattern(input, "\n") || TryMatchPattern(input, "\r\n"))
+            if (TryMatchPattern("\n") || TryMatchPattern("\r\n"))
             {
                 token = new Token(TokenType.NewLine, "\n", currentRow, currentColumn);
                 currentRow++;
@@ -61,10 +63,10 @@
             return ResetSourceIndex(startIndex, out token);
         }
 
-        private bool ReadWhiteSpace(string input)
+        private bool ReadWhiteSpace()
         {
             var space = false;
-            while (TryMatchPattern(input, " "))
+            while (TryMatchPattern(" "))
             {
                 currentColumn++;
                 space = true;
@@ -74,22 +76,22 @@
 
         #region Puntuactions
 
-        private bool TryGetSymToken(string source, out Token? token)
+        private bool TryGetSymToken(out Token? token)
         {
             int startIndex = sourceIndex;
-            if (sourceIndex >= source.Length)
+            if (sourceIndex >= sourceCode.Length)
             {
                 token = null;
                 return false;
             }
-            switch (source[sourceIndex++])
+            switch (sourceCode[sourceIndex++])
             {
                 case '+':
                     return GetDefaultToken(TokenType.Plus, "+", out token);
                 case '-':
                     return GetDefaultToken(TokenType.Minus, "-", out token);
                 case '*':
-                    if (source[sourceIndex] != '*')
+                    if (sourceCode[sourceIndex] != '*')
                     {
                         return GetDefaultToken(TokenType.Dot, "*", out token);
                     }
@@ -112,12 +114,12 @@
                 case ']':
                     return GetDefaultToken(TokenType.RightBracket, "]", out token);
                 case '<':
-                    if (source[sourceIndex] == '=')
+                    if (sourceCode[sourceIndex] == '=')
                     {
                         sourceIndex++;
                         return GetDefaultToken(TokenType.LessOrEqual, "<=", out token);
                     }
-                    else if (source[sourceIndex] == '-')
+                    else if (sourceCode[sourceIndex] == '-')
                     {
                         sourceIndex++;
                         return GetDefaultToken(TokenType.Assign, "<-", out token);
@@ -128,7 +130,7 @@
                     }
 
                 case '>':
-                    if (source[sourceIndex] == '=')
+                    if (sourceCode[sourceIndex] == '=')
                     {
                         sourceIndex++;
                         return GetDefaultToken(TokenType.GreaterOrEqual, ">=", out token);
@@ -137,7 +139,7 @@
                     {
                         return GetDefaultToken(TokenType.Greater, ">", out token);
                     }
-                case '=' when source[sourceIndex++] == '=':
+                case '=' when sourceCode[sourceIndex++] == '=':
                     return GetDefaultToken(TokenType.Equal, "==", out token);
                 case ',':
                     return GetDefaultToken(TokenType.Comma, ",", out token);
@@ -149,25 +151,25 @@
 
         #region Interger
 
-        private bool TryGetIntToken(string input, out Token? token)
+        private bool TryGetIntToken(out Token? token)
         {
-            if (TryGetIntOrIdOrKey(input, IsInterger, out string? value))
+            if (TryGetIntOrIdOrKey(IsInterger, out string? value))
             {
                 return GetDefaultToken(TokenType.Interger, value!, out token);
             }
             return ResetSourceIndex(sourceIndex, out token);
         }
 
-        private bool IsInterger(string input, int startIndex)
-            => sourceIndex < input.Length && char.IsDigit(input[sourceIndex]);
+        private bool IsInterger(int startIndex)
+            => sourceIndex < sourceCode.Length && char.IsDigit(sourceCode[sourceIndex]);
 
         #endregion
 
         #region Identifier
 
-        private bool TryGetIdentifier(string input, out Token? token)
+        private bool TryGetIdentifier(out Token? token)
         {
-            if (TryGetIntOrIdOrKey(input, IsIdentifier, out string? value))
+            if (TryGetIntOrIdOrKey(IsIdentifier, out string? value))
             {
                 var isKeyword = keyword.TryGetValue(value!, out TokenType keywordType);
                 return isKeyword ? GetDefaultToken(keywordType, value!, out token) : GetDefaultToken(TokenType.Identifier, value!, out token);
@@ -175,22 +177,28 @@
             return ResetSourceIndex(sourceIndex, out token);
         }
 
-        private bool IsIdentifier(string input, int startIndex)
-            => sourceIndex < input.Length && !((char.IsDigit(input[sourceIndex]) || input[sourceIndex] == '-') && startIndex == sourceIndex) && (input[sourceIndex] == '-' || char.IsLetterOrDigit(input[sourceIndex]));
+        private bool IsIdentifier(int startIndex)
+            => sourceIndex < sourceCode.Length
+                && !((char.IsDigit(sourceCode[sourceIndex])
+                    || sourceCode[sourceIndex] == '-'
+                    || sourceCode[sourceIndex] == '_') && startIndex == sourceIndex)
+                && (sourceCode[sourceIndex] == '-'
+                    || sourceCode[sourceIndex] == '_'
+                    || char.IsLetterOrDigit(sourceCode[sourceIndex]));
 
         #endregion
 
         #region String
 
-        private bool TryGetStrToken(string input, out Token? token)
+        private bool TryGetStrToken(out Token? token)
         {
             int startIndex = sourceIndex;
-            if (TryMatchPattern(input, "\"") && TryMatchPattern(input, "\""))
+            if (TryMatchPattern("\"") && TryMatchPattern("\""))
             {
                 return GetDefaultToken(TokenType.String, "", out token);
             }
             ResetSourceIndex(startIndex, out token);
-            if (TryMatchPattern(input, "\"") && TryGetStrValue(input, out string? value) && TryMatchPattern(input, "\""))
+            if (TryMatchPattern("\"") && TryGetStrValue(out string? value) && TryMatchPattern("\""))
             {
                 return GetDefaultToken(TokenType.String, value!, out token);
             }
@@ -198,13 +206,13 @@
             return ResetSourceIndex(startIndex, out token);
         }
 
-        private bool TryGetStrValue(string input, out string? tokenValue)
+        private bool TryGetStrValue(out string? tokenValue)
         {
             int startIndex = sourceIndex;
             string temp = "";
-            while (input[sourceIndex] != '\"')
+            while (sourceCode[sourceIndex] != '\"')
             {
-                temp += input[sourceIndex++];
+                temp += sourceCode[sourceIndex++];
             }
 
             if (temp != "")
@@ -219,14 +227,14 @@
 
         #region Tools
 
-        private bool TryGetIntOrIdOrKey(string input, IsIntOrId isIntOrId, out string? tokenValue)
+        private bool TryGetIntOrIdOrKey(IsIntOrId isIntOrId, out string? tokenValue)
         {
             int startIndex = sourceIndex;
             string temp = "";
 
-            while (isIntOrId(input, startIndex))
+            while (isIntOrId(startIndex))
             {
-                temp += input[sourceIndex++];
+                temp += sourceCode[sourceIndex++];
             }
 
             if (temp != "")
@@ -237,13 +245,13 @@
             return ResetSourceIndex(startIndex, out tokenValue);
         }
 
-        private bool TryMatchPattern(string input, string pattern)
+        private bool TryMatchPattern(string pattern)
         {
             int startIndex = sourceIndex;
 
             for (int i = 0; i < pattern.Length; i++)
             {
-                if (i + startIndex > input.Length - 1 || pattern[i] != input[i + startIndex])
+                if (i + startIndex > sourceCode.Length - 1 || pattern[i] != sourceCode[i + startIndex])
                 {
                     sourceIndex = startIndex;
                     return false;

@@ -1,4 +1,4 @@
-﻿using PixelWallE.Global.AST;
+﻿using PixelWallE.Data.AST;
 using PixelWallE.Interfaces;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 

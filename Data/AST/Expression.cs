@@ -1,7 +1,7 @@
 using PixelWallE.Interfaces;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
-namespace PixelWallE.Global.AST;
+namespace PixelWallE.Data.AST;
 
 public class BinaryExpreNode(IExpression left, IExpression right, BinaryOperationType opType, Coord coord) : IExpression
 {

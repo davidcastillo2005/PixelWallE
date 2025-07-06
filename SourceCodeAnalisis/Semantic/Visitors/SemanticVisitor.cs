@@ -1,4 +1,4 @@
-using PixelWallE.Global.AST;
+using PixelWallE.Data.AST;
 using PixelWallE.Interfaces;
 using PixelWallE.SourceCodeAnalisis.Syntactic.Enums;
 
@@ -47,10 +47,8 @@ public class SemanticVisitor(Context context) : IVisitor
         return [.. results];
     }
 
-    public void AssignVisit(string identifier, DynamicValue value, Coord coord)
-    {
-        Context.Variables[identifier] = CheckDynamicValue(coord, value);
-    }
+    public void AssignVisit(string identifier, DynamicValue value, Coord coord) 
+        => Context.Variables[identifier] = CheckDynamicValue(coord, value);
 
     public DynamicValue LiteralVisit(DynamicValue value, Coord coord)
         => CheckDynamicValue(coord, value);
